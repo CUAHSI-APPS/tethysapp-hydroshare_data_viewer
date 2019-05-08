@@ -1,0 +1,217 @@
+{% extends "hydroshare_gis_data_viewer/base.html" %}
+{% load tethys_gizmos %}
+{% load staticfiles %}
+
+{% block header_buttons %}
+  <div class="header-button glyphicon-button" data-toggle="tooltip" data-placement="bottom" title="Help">
+    <a data-toggle="modal" data-target="#help-modal"><span class="glyphicon glyphicon-question-sign"></span></a>
+  </div>
+{% endblock %}
+
+{% block app_navigation_items %}
+  <div class="workspace-section-header">
+    <h5>Layers</h5>
+  </div>
+  <div id="layer-table-container">
+    <table id="layer-table" class="hover">
+      <thead>
+        <tr>
+          <th id="layer-id"></th>
+          <th id="layer-code"></th>
+          <th id="layer-icon"></th>
+          <th id="layer-name"></th>
+          <th id="layer-drag"></th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
+
+{% block app_content %}
+  <div id="map" class="map"></div>
+  <div class="data-viewer-container">
+    <div class="data-viewer-header">
+      <ul class="data-viewer-tabs hidden">
+        <li id="layer-options-tab" class="data-viewer-tab active" > 
+          <a href=# >Layer Options</a> 
+        </li>
+        <li id="attr-table-tab" class="data-viewer-tab"> 
+          <a href=# >Attribute Table</a> 
+        </li>
+      </ul>
+      <div id="data-viewer-show" class="data-viewer-toggle hidden"  data-toggle="tooltip" data-placement="left" title="Expand">
+        <a><span class="glyphicon glyphicon-chevron-up"></span></a>
+      </div>
+      <div id="data-viewer-hide" class="data-viewer-toggle hidden"  data-toggle="tooltip" data-placement="left" title="Collapse">
+        <a><span class="glyphicon glyphicon-chevron-down"></span></a>
+      </div>
+    </div>
+    <div class="data-viewer-content hidden">
+      <div id="layer-options-tab-view" class="data-viewer-content-page">
+        <div class="data-viewer-section">
+          <h6><b>Actions</b></h6>
+          <button id="show-layer-btn" type="button" class="action-btn btn btn-default hidden">Show Layer</button>
+          <button id="hide-layer-btn" type="button" class="action-btn btn btn-default">Hide Layer</button>
+          <button id="zoom-to-layer-btn" type="button" class="action-btn btn btn-default">Zoom to Layer</button>
+          <button id="remove-layer-btn" type="button" class="action-btn btn btn-danger" data-toggle="modal" data-target="#remove-layer-modal">Remove Layer</button>
+        </div>
+        <div class="data-viewer-section">
+          <h6><b>Styling</b></h6>
+          <div id="styling-container" class="data-viewer-section-content">
+            <div id="layer-name-container" class="symbology-input-container">
+              <label>Layer Name:</label>
+              <input id="layer-name-input" type="text">
+            </div>
+            <div id="fill-color-container" class="symbology-input-container">
+              <label>Fill Color:</label>
+              <input id="fill-color-selector" comp="fill" type="text" class="color-selector"/>
+            </div>
+            <div id="line-color-container" class="symbology-input-container">
+              <label>Line Color:</label>
+              <input id="line-color-selector" comp="stroke" type="text" class="color-selctor"/>
+            </div>
+            <div id="line-size-container" class="symbology-input-container">
+              <label>Line Thickness:</label>
+              <select id="line-size-input" class="symbology-input">
+                <option selected="selected" value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+              </select>
+            </div>
+            <div id="point-size-container" class="symbology-input-container">
+              <label>Point Size:</label>
+              <select id="point-size-input" class="symbology-input">
+                <option value="2">2</option>
+                <option value="4">4</option>
+                <option selected value="6">6</option>
+                <option value="8">8</option>
+                <option value="10">10</option>
+              </select>
+            </div>
+            <div id="point-shape-container" class="symbology-input-container">
+              <label>Point Shape:</label>
+              <select id="point-shape-input" class="symbology-input">
+                <option value="circle">Circle</option>
+                <option value="square">Square</option>
+                <option value="triangle">Triangle</option>
+              </select>
+            </div>
+            <div id="font-attr-container" class="symbology-input-container">
+              <label>Font:</label>
+              <select></select>
+            </div>
+            <div id="font-family-container" class="symbology-input-container">
+              <label>Font Family:</label>
+              <select>
+                <option value="ariel">Ariel</option>
+                <option value="times">Times New Roman</option>
+              </select>
+            </div>
+            <div id="font-color-container" class="symbology-input-container">
+              <label>Font Color:</label>
+              <input id="font-color-selector" comp="font" type="text" class="color-selctor"/>
+            </div>
+            <div id="font-size-container" class="symbology-input-container">
+              <label>Font Size:</label>
+              <option value="6">6</option>
+              <option value="8">8</option>
+              <option value="10">10</option>
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16">16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+            </div>
+            <div id="color-map-container" class="symbology-input-container">
+              <label>Color Map:</label>
+              <select id="color-map-input" class="symbology-input">
+                <option value="gray">Gray</option>
+                <option value="rainbow">Rainbow</option>
+                <option value="electric">Electric</option>
+                <option value="bone">Bone</option>
+                <option value="blackbody">Blackbody</option>
+                <option value="viridis">Viridis</option>
+                <option value="jet">Jet</option>  
+                <option value="hot">Hot</option>
+                <option value="cool">Cool</option>
+                <option value="magma">Magma</option>
+                <option value="plasma">Plasma</option>   
+                <option value="spring">Spring</option>
+                <option value="summer">Summer</option>
+                <option value="autumn">Autumn</option>
+                <option value="winter">Winter</option>
+              </select>
+            </div>
+            <div id="basemap-container" class="symbology-input-container">
+              <label>Basemap:</label>
+              <select id="basemap-select">
+                <option value="satellite">Satellite Map</option>
+                <option value="street">Street Map</option>
+                <option value="grey">Gray Map</option>
+                <option value="dark">Dark Map</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="attr-table-tab-view" class="data-viewer-content-page hidden">
+
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{# Use the after_app_content block for modals #}
+{% block after_app_content %}
+  <!-- Example Modal -->
+  <div class="modal fade" id="help-modal" tabindex="-1" role="dialog" aria-labelledby="help-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title" id="help-modal-label">Example Modal</h5>
+        </div>
+        <div class="modal-body">
+          <p>You can add custom buttons to the app header using the <code>header_buttons</code> block. Use anchor/link tags for the button and wrap it in a div with the class <code>header-button</code>. For buttons with the gliphyicons, add the <code>glyphicon-button</code> class as well.</p>
+          <p>Ever have trouble using a modal in a Tethys app? Use the <code>after_app_content</code> block for modal content to allow them to function properly. See: <a href="https://getbootstrap.com/javascript/#modals">Bootstrap Modals</a></p>
+          <p>Add tooltips to any element by adding the <code>data-toggle</code>, <code>data-placement</code>, and <code>title</code> attributes to the button. See: <a href="https://getbootstrap.com/javascript/#tooltips">Bootstrap Tooltips</a></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove Layer Confirmation -->
+  <div class="modal fade" id="remove-layer-modal" tabindex="-1" role="dialog" aria-labelledby="help-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title">Confirm Layer Removal</h5>
+        </div>
+        <div class="modal-body">
+          <h8>Are you sure you want to remove this layer from the map?</h8> 
+          <br><br>
+          <h8>Note: This will not affect the HydroShare resource.</h8>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button id="remove-layer-confirm-btn" type="button" class="btn btn-danger" data-dismiss="modal">Remove Layer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block app_actions %}
+{% endblock %}
