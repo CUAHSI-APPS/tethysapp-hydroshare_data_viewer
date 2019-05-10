@@ -9,6 +9,7 @@
     var map;
     var mapBasemaps;
     var layerTable;
+    var attributeTable;
     var layerList = {};
     var activeLayer = null;
 
@@ -78,6 +79,16 @@
         streetLayer.setVisible(false);
         greyLayer.setVisible(false);
         darkLayer.setVisible(false);
+
+        // Initializes Attribute Table
+        /*attributeTable = $('#attribute-table').DataTable({
+            'select': true,
+            'selection': 'multiple',
+            'searching': false, 
+            'paging': false, 
+            'info': false,
+			'autoWidth': false
+        });*/
 
         // Initializes Layer Table
         layerTable = $('#layer-table').DataTable({
@@ -269,7 +280,7 @@
     					'symbology': {
     						'type': 'simple',
     						'color': [0, 0, 0],
-    						'size': 1,
+    						'size': 0,
     						'colorMap': 'grey'
     					},
     					'layerSource': null,
@@ -311,7 +322,7 @@
     					'symbology': {
     						'type': 'simple',
     						'color': [0, 0, 0],
-    						'size': 1
+    						'size': 0
     					},
     					'layerSource': null,
     					'rasterSource': null,
@@ -362,7 +373,7 @@
             var sldBody = SLD_TEMPLATES.getComponentSLD(layerType, layerName, layerComponent, componentSymbology);
 			layerList[layerCode]['layer'][layerComponent]['layerSource'] = new ol.source.ImageWMS({
                 url: 'https://geoserver.hydroshare.org/geoserver/wms',
-                params: {'LAYERS': layerName, 'SLD_BODY': sldBody},
+                params: {'LAYERS': layerName, 'SLD_BODY': sldBody, 'TILED': true},
                 serverType: 'geoserver',
                 crossOrigin: 'Anonymous'
             });
@@ -392,7 +403,84 @@
                 source: layerList[layerCode]['layer'][layerComponent]['rasterSource']
             });
             map.addLayer(layerList[layerCode]['layer'][layerComponent]['imageSource']);
-    	};
+        };
+    };
+
+    /* Sets up Attribute Table for Layer */
+    function setUpAttributeTable(layerCode) {
+    	try {
+        	attributeTable.destory()		
+    	}
+    	catch(err) {
+    		console.log('error!')
+    	}
+    	var layerType = layerList[layerCode]['layerType'];
+        if (layerType === 'polygon' || layerType === 'line') {
+	        var params = {
+	        	'service': 'WFS',
+	        	'version': '1.3.0',
+	        	'request': 'describeFeatureType',
+	        	'typeName': layerList[layerCode]['layerName'],
+	        	'outputFormat': 'application/json',
+	        	'layerCode': layerCode
+	        }
+	        $.ajax({
+	        	url: 'https://geoserver.hydroshare.org/geoserver/wfs',
+	        	data: params,
+	        	success: function(response) {
+	        		var requestUrl = new URL(this.url);
+	        		var propertyName = requestUrl.searchParams.get('typeName').replace('%3A', ':');
+	        		var layerCode = requestUrl.searchParams.get('layerCode');
+	        		var params = {
+	        			'service': 'WFS',
+	        			'version': '1.3.0',
+	        			'request': 'GetFeature',
+	        			'typeName': propertyName,
+	        			'propertyName': [],
+	        			'outputFormat': 'application/json',
+	        			'layerCode': layerCode,
+	        			'startIndex': 0,
+	        			'count': 100000
+	        		};
+	        		for (var i = 0; i < response['featureTypes'][0]['properties'].length; i++) {
+	        			if (response['featureTypes'][0]['properties'][i]['name'] === 'the_geom') {
+	        				params['propertyName'].push(response['featureTypes'][0]['properties'][i]['name'])
+	        			};
+	        		};
+
+	        		$.ajax({
+	        			url: 'https://geoserver.hydroshare.org/geoserver/wfs',
+	        			data: params,
+	        			timeout: 10000,
+	        			success: function(response) {
+	        				var requestUrl = new URL(this.url);
+	        				var layerCode = requestUrl.searchParams.get('layerCode');
+	        				console.log("################")
+	        				console.log(response);
+	        			},
+	        			error: function(response) {
+	        				console.log('error');
+	        				console.log(response)
+	        			}
+	        		});
+
+
+
+
+
+
+	        	},
+	        	error: function(response) {
+	        		console.log('error');
+	        		console.log(response);
+	        	}
+	        });
+	    };
+	    if (layerType === 'point') {
+	    	console.log("******************")
+	    	console.log(layerList[layerCode]['layer']['point']['layerSource'].getFeatures());
+	    	console.log(layerList[layerCode]['layer']['point']['imageSource'].getFeatures());
+	    };
     };
 
     /* Add WFS Layer to map */
@@ -805,12 +893,15 @@
     		    break;
     		case 'basemap':
     			$('#basemap-container').removeClass('hidden');
-    			$('#basemap-select').val(layerList[activeLayer]['layer']['basemap']['symbology']);
+    			$('#basemap-select').val(layerList[layerCode]['layer']['basemap']['symbology']);
     		    break;
     	};
 
     	// Show the data viewer
 		showDataViewer();
+
+		// Update Attribute Table
+		setUpAttributeTable(layerCode);
     };
 
     /* Disables data viewer when no layers are selected */

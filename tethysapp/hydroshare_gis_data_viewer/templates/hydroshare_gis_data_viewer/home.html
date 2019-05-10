@@ -75,14 +75,14 @@
             <div id="line-size-container" class="symbology-input-container">
               <label>Line Thickness:</label>
               <select id="line-size-input" class="symbology-input">
-                <option selected="selected" value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
+                <option selected="selected" value="0">1</option>
+                <option value="1">2</option>
+                <option value="2">3</option>
+                <option value="3">4</option>
+                <option value="4">5</option>
+                <option value="5">6</option>
+                <option value="6">7</option>
+                <option value="7">8</option>
               </select>
             </div>
             <div id="point-size-container" class="symbology-input-container">
@@ -162,7 +162,12 @@
         </div>
       </div>
       <div id="attr-table-tab-view" class="data-viewer-content-page hidden">
-
+        <div id="attribute-table-container">
+          <table id="attribute-table" class="hover">
+            <thead><th>Feature</th></thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

@@ -232,3 +232,32 @@
 .action-btn {
     margin-bottom: 10px;
 }
+
+
+
+
+
+
+#attribute-table-container {
+    width: 100%;
+}
+
+#attribute-table tr td {
+    font-size: 12px;
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    height: 25px;
+}
+
+.dataTables_scroll {
+    height: 485px !important;
+}
+
+.dataTables_scrollBody {
+    height: 420px;
+    background-color: #E4E4E4;
+    border-right: 1px solid #E4E4E4;
+    border-left: 1px solid #E4E4E4;
+}
