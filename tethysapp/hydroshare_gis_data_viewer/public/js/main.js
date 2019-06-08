@@ -127,7 +127,7 @@
         var rowNode = layerTable.row.add([
         	1,
             '0000000000',
-            `<img src="http://127.0.0.1:8000/static/hydroshare_gis_data_viewer/images/basemap.svg"/>`,
+            `<img src="/static/hydroshare_gis_data_viewer/images/basemap.svg"/>`,
             layerList[layerCode]['layerName'],
             `<span class="glyphicon glyphicon-resize-vertical glyph-layer-move"></span>`
         ]).draw(false).node();
