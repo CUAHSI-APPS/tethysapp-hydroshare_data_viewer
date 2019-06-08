@@ -29,6 +29,16 @@ class HydroshareGisDataViewer(TethysAppBase):
                 url='hydroshare-gis-data-viewer',
                 controller='hydroshare_gis_data_viewer.controllers.home'
             ),
+            UrlMap(
+                name='get-hydroshare-resource-layers',
+                url='hydroshare-gis-data-viewer/get-hydroshare-resource-layers',
+                controller='hydroshare_gis_data_viewer.controllers.get_hydroshare_resource_layers'
+            ),
+            UrlMap(
+                name='get-attribute-table',
+                url='hydroshare-gis-data-viewer/get-attribute-table',
+                controller='hydroshare_gis_data_viewer.controllers.get_attribute_table'
+            ),
         )
 
         return url_maps

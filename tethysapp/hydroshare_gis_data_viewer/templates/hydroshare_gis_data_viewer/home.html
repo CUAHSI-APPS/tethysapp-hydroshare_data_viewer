@@ -75,14 +75,13 @@
             <div id="line-size-container" class="symbology-input-container">
               <label>Line Thickness:</label>
               <select id="line-size-input" class="symbology-input">
-                <option selected="selected" value="0">1</option>
-                <option value="1">2</option>
-                <option value="2">3</option>
-                <option value="3">4</option>
-                <option value="4">5</option>
-                <option value="5">6</option>
-                <option value="6">7</option>
-                <option value="7">8</option>
+                <option selected="selected"value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
               </select>
             </div>
             <div id="point-size-container" class="symbology-input-container">
@@ -162,12 +161,14 @@
         </div>
       </div>
       <div id="attr-table-tab-view" class="data-viewer-content-page hidden">
-        <div id="attribute-table-container">
+        <div id="attribute-table-container" class="hidden">
           <table id="attribute-table" class="hover">
             <thead><th>Feature</th></thead>
             <tbody></tbody>
           </table>
         </div>
+        <div id="attr-loading">Loading Attribute Table...</div>
+        <div id="attr-error" class="hidden">Unable to Load Attribute Table</div>
       </div>
     </div>
   </div>
@@ -181,12 +182,12 @@
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h5 class="modal-title" id="help-modal-label">Example Modal</h5>
+          <h5 class="modal-title" id="help-modal-label">Using the HydroShare GIS Data Viewer</h5>
         </div>
         <div class="modal-body">
-          <p>You can add custom buttons to the app header using the <code>header_buttons</code> block. Use anchor/link tags for the button and wrap it in a div with the class <code>header-button</code>. For buttons with the gliphyicons, add the <code>glyphicon-button</code> class as well.</p>
-          <p>Ever have trouble using a modal in a Tethys app? Use the <code>after_app_content</code> block for modal content to allow them to function properly. See: <a href="https://getbootstrap.com/javascript/#modals">Bootstrap Modals</a></p>
-          <p>Add tooltips to any element by adding the <code>data-toggle</code>, <code>data-placement</code>, and <code>title</code> attributes to the button. See: <a href="https://getbootstrap.com/javascript/#tooltips">Bootstrap Tooltips</a></p>
+          <p>This app uses OGC Web Services to help you visualize geospatial data stored on HydroShare. Public geographic feature and geographic raster data are currently supported.</p>
+          <p>The leftside pane of the app contains a list of layers, including the basemap. These layers can be reordered by clicking on the double sided arrow and dragging it up or down. This pane also acts a legend with the icons representing the layer type and styling. You can click on a layer to activate it.</p>
+          <p>When you click on a layer to activate it, a bottom pane appears with additional options and information. All layers have a variety of styling options that you can edit. Geographic feature layers also have an attribute table available in this pane. This attribute table may not be available for very large layers.</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
