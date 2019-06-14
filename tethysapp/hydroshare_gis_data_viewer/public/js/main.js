@@ -9,6 +9,7 @@
     var map;
     var mapBasemaps;
     var layerTable;
+    var discoverTable;
     var attributeTable;
     var layerList = {};
     var activeLayer = null;
@@ -22,7 +23,8 @@
 
         // Gets URL query parameters.
         var urlParams = new URLSearchParams(window.location.search);
-        var resList = [...new Set(urlParams.getAll('res_id'))]
+        var resList = [...new Set(urlParams.getAll('res_id'))];
+        //history.pushState(null, "", location.href.split("?")[0]);
 
         // Initializes map div.
         map = new ol.Map({
@@ -43,7 +45,6 @@
 		map.on('pointerdrag', function(evt) {
 		    map.getViewport().style.cursor = "grabbing";
 		});
-
 		map.on('pointerup', function(evt) {
 		    map.getViewport().style.cursor = "default";
 		});
@@ -55,16 +56,19 @@
                 imagerySet: 'AerialWithLabels',
             })
         });
+
         var streetLayer = new ol.layer.Tile({
 		    source: new ol.source.XYZ({ 
 		        url: 'http://{1-4}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
 		    })
-        });  
+        });
+
         var greyLayer = new ol.layer.Tile({
 		    source: new ol.source.XYZ({ 
 		        url: 'http://{1-4}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
 		    })
         });
+
         var darkLayer = new ol.layer.Tile({
 		    source: new ol.source.XYZ({ 
 		        url: 'http://{1-4}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
@@ -82,7 +86,7 @@
         darkLayer.setVisible(false);
 
         // Initializes Layer Table
-        layerTable = $('#layer-table').DataTable({
+        layerTable = $('#workspace-table').DataTable({
             'select': {
                 'style': 'single'
             },
@@ -97,13 +101,26 @@
                 {'visible': false, 'targets': [0,1]}
             ],
 			'createdRow': function( row, data, dataIndex ) {
-			    $(row).addClass('layer-table-row');
+			    $(row).addClass('workspace-table-row');
 			}
         });
 
         layerTable.on('row-reorder', reorderMapLayers);
         layerTable.on('select', updateDataViewer);
         layerTable.on('deselect', disableDataViewer);
+
+        // Initializes Discover Table
+        discoverTable = $('#discover-table').DataTable({
+            'searching': true,
+            'paging': false, 
+            'info': false,
+            'columnDefs': [
+                {'visible': false, 'targets': [0,1]}
+            ],
+            'createdRow': function( row, data, dataIndex ) {
+                $(row).addClass('discover-table-row');
+            }
+        });
 
         // Adds Base Map to Layer List
         var layerCode = '0000000000'
@@ -127,42 +144,83 @@
         var rowNode = layerTable.row.add([
         	1,
             '0000000000',
-            `<img src="/static/hydroshare_gis_data_viewer/images/basemap.svg"/>`,
+            `<img id="basemap-icon" src="/static/hydroshare_gis_data_viewer/images/basemap.svg"/>`,
             layerList[layerCode]['layerName'],
             `<span class="glyphicon glyphicon-resize-vertical glyph-layer-move"></span>`
         ]).draw(false).node();
 
-        $(rowNode).find('td').eq(0).addClass('layer-icon');
-        $(rowNode).find('td').eq(1).addClass('layer-name');
-        $(rowNode).find('td').eq(2).addClass('layer-move');
+        $(rowNode).find('td').eq(0).addClass('workspace-layer-icon');
+        $(rowNode).find('td').eq(1).addClass('workspace-layer-name');
+        $(rowNode).find('td').eq(2).addClass('workspace-layer-move');
+
+        // Sets initial nav tab.
+        if (resList.length > 0) {
+            toggleNavTabs('workspace');
+        } else {
+            toggleNavTabs('discover');
+        };
 
         // Adds HydroShare resource layers to map.
-        getHydroShareResourceLayers(resList);
+        getLayers(resList, null, 'initial');
+
+        // Gets list of available layers.
+        getLayerList();
     };
 
-    /* Gets available layers from HydroShare resource */
-    function getHydroShareResourceLayers(resIdList) {
+    /* Gets layers to add to map */
+    function getLayers(resIdList, layerId, requestType) {
         $.ajax({
             headers: {
                 'X-CSRFToken': getCookie('csrftoken')
             },
             type: 'POST',
             data: {
-                'resource_id_list': resIdList
+                'resource_id_list': resIdList,
+                'layer_id': layerId,
+                'request_type': requestType
             },
-            url: 'get-hydroshare-resource-layers/',
+            url: 'get-layers/',
             success: function(response) {
                 if (response['success'] === true) {
                     for (var layerCode in response['results']) {
-                        addLayerToMap(layerCode, response['results'][layerCode])
+                        var statusCode = addLayerToMap(layerCode, response['results'][layerCode]);
+                    };
+                    if (response['message'] === 'post') {
+                        if (!$.isEmptyObject(response['results'])) {
+                            $('#add-resource-modal').modal('hide');
+                            $('#add-resource-message').addClass('hidden');
+                        } else {
+                            $('#add-resource-message').text('Unable to add any layers from this resource.');
+                        };
                     };
                     zoomToExtent(response['results']);
                 } else {
-                    console.log('Layer Load Failed')
+                    console.log('Layer Load Failed');
                 };
             },
             error: function(response) {
-                console.log('Layer Load Failed')
+                console.log('Layer Load Failed');
+            }
+        });
+    };
+
+    /* Gets a list of available layers to add to the discover list */
+    function getLayerList() {
+        $.ajax({
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            type: 'POST',
+            url: 'get-layer-list/',
+            success: function(response) {
+                if (response['success'] === true) {
+                    populateDiscoverTable(response['results'])
+                } else {
+                    console.log('Get Layer List Failed');
+                };
+            },
+            error: function(response) {
+                console.log('Get Layer List Failed');
             }
         });
     };
@@ -170,10 +228,49 @@
     /* Adds a layer to the map */
     function addLayerToMap(layerCode, layer) {
 
-        layerList[layerCode] = layer;
-        layerList[layerCode]['layerSymbology'] = getLayerSymbology(layerCode)
-        var sldBody = SLD_TEMPLATES.getLayerSLD(layerList[layerCode]['layerType'], layerList[layerCode]['layerId'], layerList[layerCode]['layerSymbology'])
+        // Checks if max layer count has been reached
+        if (Object.keys(layerList).length > 8) {
+            updateDiscoverTable(layer['layerId'], 'remove');
+            return 'max';
+        };
 
+        // Checks if layer has already been added
+        var layerIdList = []
+        for (var i in layerList) {
+            layerIdList.push(layerList[i]['layerId']);
+        };
+        if (layerIdList.includes(layer['layerId'])) {
+            return null;
+        };
+
+        // Gets layer data
+        layerList[layerCode] = layer;
+        layerList[layerCode]['layerSymbology'] = getLayerSymbology(layerCode);
+        layerList[layerCode]['layerVisible'] = true;
+
+        // Updates row order number
+        layerTable.rows().eq(0).each(function(index) {
+            var cell = layerTable.cell(index, 0);
+            cell.data(parseInt(cell.data(), 10) + 1).draw();
+        });
+
+        // Adds row to workspace layer list
+        var rowNode = layerTable.row.add([
+            1,
+            layerCode,
+            layer['layerId'],
+            layer['layerName'],
+            `<span class="glyphicon glyphicon-resize-vertical glyph-layer-move"></span>`
+        ]).draw(false).node();
+
+        $(rowNode).find('td').eq(0).addClass('workspace-layer-icon');
+        $(rowNode).find('td').eq(1).addClass('workspace-layer-name');
+        $(rowNode).find('td').eq(2).addClass('workspace-layer-move');
+
+        // Gets SLD body for layer
+        var sldBody = SLD_TEMPLATES.getLayerSLD(layerList[layerCode]['layerType'], layerList[layerCode]['layerId'], layerList[layerCode]['layerSymbology']);
+
+        // Creates layer WMS object
         layerList[layerCode]['layerWMS'] = new ol.source.ImageWMS({
             url: 'https://geoserver.hydroshare.org/geoserver/wms',
             params: {'LAYERS': layerList[layerCode]['layerId'], 'SLD_BODY': sldBody},
@@ -181,34 +278,122 @@
             crossOrigin: 'Anonymous'
         });
 
+        // Adds spinning icon to layer while layer is loading
+        layerList[layerCode]['layerWMS'].on('imageloadstart', function() {
+            layerTable.rows().every(function() {
+                var tableRow = this.data();
+                var tableLayerCode = tableRow[1];
+                if (tableLayerCode === layerCode) {
+                    layerTable.cell(this[0][0], 2).data('<img class="workspace-layer-icon" src="/static/hydroshare_gis_data_viewer/images/spinner.gif">');
+                };
+            });
+        });
+
+        // Adds layer icon to layer when layer finishes loading
+        layerList[layerCode]['layerWMS'].on('imageloadend', function() {
+            var layerIcon = createLayerIcon(layerCode);
+            layerTable.rows().every(function() {
+                var tableRow = this.data();
+                var tableLayerCode = tableRow[1];
+                if (tableLayerCode === layerCode) {
+                    layerTable.cell(this[0][0], 2).data(layerIcon);
+                };
+                // Add code for updating discover list icon
+            });
+        });
+
+        // Creates layer image object
         layerList[layerCode]['layerSource'] = new ol.layer.Image({
             source: layerList[layerCode]['layerWMS']
         });
 
+        // Add layer to map
         map.addLayer(layerList[layerCode]['layerSource']);
 
-        layerList[layerCode]['layerVisible'] = true;
-
-        layerTable.rows().eq(0).each(function(index) {
-        	var cell = layerTable.cell(index, 0);
-		    cell.data(parseInt(cell.data(), 10) + 1).draw();
-		});
-
-        var rowNode = layerTable.row.add([
-        	1,
-            layerCode,
-            createLayerIcon(layerCode),
-            layer['layerName'],
-            `<span class="glyphicon glyphicon-resize-vertical glyph-layer-move"></span>`
-        ]).draw(false).node();
-
-        $(rowNode).find('td').eq(0).addClass('layer-icon');
-        $(rowNode).find('td').eq(1).addClass('layer-name');
-        $(rowNode).find('td').eq(2).addClass('layer-move');
-
+        // Reorders map layers
         reorderMapLayers();
 
+        // Updates Discover Table
+        updateDiscoverTable(layerList[layerCode]['layerId'], 'add');
+
         return layerCode;
+    };
+
+    /* Adds rows to discover table */
+    function populateDiscoverTable(layerList) {
+        for (var i = 0; i < layerList.length; i++) {
+            switch (layerList[i]['type']) {
+                case 'VECTOR':
+                    var discoverLayerIcon = `<img class="discover-layer-icon-image" src="/static/hydroshare_gis_data_viewer/images/GeographicFeatureResource.png"/>`;
+                    break;
+                case 'RASTER':
+                    var discoverLayerIcon = `<img class="discover-layer-icon-image" src="/static/hydroshare_gis_data_viewer/images/RasterResource.png"/>`;
+                    break;
+            };
+            var rowNode = discoverTable.row.add([
+                layerList[i]['id'],
+                layerList[i]['resource_id'],
+                discoverLayerIcon,
+                layerList[i]['name'],
+                `<span class="add-layer-button glyphicon glyphicon-plus"></span>`
+            ]).draw(false).node();
+            $(rowNode).find('td').eq(0).addClass('discover-layer-icon');
+            $(rowNode).find('td').eq(1).addClass('discover-layer-name');
+            $(rowNode).find('td').eq(2).addClass('discover-layer-add');
+        };
+        updateDiscoverTable(null, 'update');
+    };
+
+    /* Adds a HydroShare resource to the session */
+    function addHydroShareResource(evt) {
+        var resId = $('#resource-id-input').val();
+        if (resId.match("^[A-z0-9]+$")) {
+            $('#add-resource-message').html('Loading...');
+            $('#add-resource-message').removeClass('hidden');
+            getLayers([resId], null, 'post');
+        } else {
+            alert("Please enter a valid HydroShare Resource ID");
+        };
+    };
+
+    /* Adds a layer from the discovery list */
+    function addLayerFromDiscoverList(evt) {
+
+        // Gets data from clicked row
+        var data = discoverTable.row($(this).parents('tr')).data();
+
+        // Adds spinner icon to discover table
+        discoverTable.cell($(this).parents('td')).data('<img class="discover-layer-loading-icon" src="/static/hydroshare_gis_data_viewer/images/spinner.gif">');
+
+        // Adds layers to map
+        getLayers([data[1]], data[0], 'discover');
+    };
+
+    /* Updates Discover Table when data is added to Workspace */
+    function updateDiscoverTable(layerId, event) {
+        try {
+            switch (event) {
+                case 'add':
+                    var index = discoverTable.rows().eq( 0 ).filter( function (rowIdx) {
+                        return discoverTable.cell( rowIdx, 0 ).data() === layerId ? true : false;
+                    } );
+                    discoverTable.cell(index[0],4).data('<span class="layer-added glyphicon glyphicon-ok"></span>');
+                    break;
+                case 'remove':
+                    var index = discoverTable.rows().eq( 0 ).filter( function (rowIdx) {
+                        return discoverTable.cell( rowIdx, 0 ).data() === layerId ? true : false;
+                    } );
+                    discoverTable.cell(index[0],4).data('<span class="add-layer-button glyphicon glyphicon-plus"></span>');
+                    break;
+                case 'update':
+                    for (var layerCode in layerList) {
+                        if (layerCode !== '0000000000') {
+                            updateDiscoverTable(layerList[layerCode]['layerId'], 'add');
+                        };
+                    };
+                    break;
+            };
+        } catch {};
     };
 
     /* Gets Default Symbology for a Layer */
@@ -254,6 +439,7 @@
                 var colorMap = getColorMap('gray', layerList[layerCode]['layerProperties'][0]['max_value'], layerList[layerCode]['layerProperties'][0]['min_value'])
                 var layerSymbology = {
                     'type': 'colormap',
+                    'colormapName': 'gray',
                     'colormap': colorMap,
                 };
                 break;
@@ -342,12 +528,12 @@
                 var tableRow = this.data();
                 var layerCode = tableRow[1];
                 if (layerList[layerCode]['layerType'] === 'basemap') {
-                    layerList[layerCode]['layerSource']['satellite'].setZIndex(1000 - tableRow[0])
-                    layerList[layerCode]['layerSource']['street'].setZIndex(1000 - tableRow[0])
-                    layerList[layerCode]['layerSource']['grey'].setZIndex(1000 - tableRow[0])
-                    layerList[layerCode]['layerSource']['dark'].setZIndex(1000 - tableRow[0])
+                    layerList[layerCode]['layerSource']['satellite'].setZIndex(1000 - tableRow[0]);
+                    layerList[layerCode]['layerSource']['street'].setZIndex(1000 - tableRow[0]);
+                    layerList[layerCode]['layerSource']['grey'].setZIndex(1000 - tableRow[0]);
+                    layerList[layerCode]['layerSource']['dark'].setZIndex(1000 - tableRow[0]);
                 } else {
-                    layerList[layerCode]['layerSource'].setZIndex(1000 - tableRow[0])
+                    layerList[layerCode]['layerSource'].setZIndex(1000 - tableRow[0]);
                 };
             });
         }, 100);
@@ -418,21 +604,21 @@
                     case 'circle':
                         var layerIcon = `
                             <svg height="24" width="24">
-                                <circle class="layer-icon" cx="12" cy="12" r="7" fill-opacity="${fillOpacity}" stroke-opacity="${lineOpacity}" style="fill:${fillColor};stroke:${lineColor};stroke-width:2" />
+                                <circle class="workspace-layer-icon" cx="12" cy="12" r="7" fill-opacity="${fillOpacity}" stroke-opacity="${lineOpacity}" style="fill:${fillColor};stroke:${lineColor};stroke-width:2" />
                             </svg>
                         `;
                         break;
                     case 'square':
                         var layerIcon = `
                             <svg height="24" width="24">
-                                <rect class="layer-icon" x="5" y="5" width="14" height="14" fill-opacity="${fillOpacity}" stroke-opacity="${lineOpacity}" style="fill:${fillColor};stroke:${lineColor};stroke-width:2" />
+                                <rect class="workspace-layer-icon" x="5" y="5" width="14" height="14" fill-opacity="${fillOpacity}" stroke-opacity="${lineOpacity}" style="fill:${fillColor};stroke:${lineColor};stroke-width:2" />
                             </svg>
                         `;
                         break;
                     case 'triangle':
                         var layerIcon = `
                             <svg height="24" width="24">
-                                <polygon class="layer-icon" points="2 22, 22 22, 12 6" fill-opacity="${fillOpacity}" stroke-opacity="${lineOpacity}" style="fill:${fillColor};stroke:${lineColor};stroke-width:2"/>
+                                <polygon class="workspace-layer-icon" points="2 22, 22 22, 12 6" fill-opacity="${fillOpacity}" stroke-opacity="${lineOpacity}" style="fill:${fillColor};stroke:${lineColor};stroke-width:2"/>
                             </svg>
                         `;
                         break;
@@ -443,7 +629,7 @@
                 var lineOpacity = layerList[layerCode]['layerSymbology']['strokeOpacity'];
                 var layerIcon = `
                     <svg height="24" width="24">
-                      <polyline class="layer-icon" points="1,23 20,18 5,7 23,1" fill-opacity="${lineOpacity}" style="fill:none;stroke:${lineColor};stroke-width:2" />
+                      <polyline class="workspace-layer-icon" points="1,23 20,18 5,7 23,1" fill-opacity="${lineOpacity}" style="fill:none;stroke:${lineColor};stroke-width:2" />
                     </svg>
                 `;
                 break;
@@ -454,7 +640,7 @@
                 var lineOpacity = layerList[layerCode]['layerSymbology']['strokeOpacity'];
                 var layerIcon = `
                     <svg height="24" width="24">
-                      <polygon class="layer-icon" points="1,23 5,5 20,1 23,20" fill-opacity="${fillOpacity}" stroke-opacity="${lineOpacity}" style="fill:${fillColor};stroke:${lineColor};stroke-width:2" />
+                      <polygon class="workspace-layer-icon" points="1,23 5,5 20,1 23,20" fill-opacity="${fillOpacity}" stroke-opacity="${lineOpacity}" style="fill:${fillColor};stroke:${lineColor};stroke-width:2" />
                     </svg>
                 `;
                 break;
@@ -473,39 +659,28 @@
                           ${svgGradient}
                         </linearGradient>
                       </defs>
-                      <rect class="layer-icon" width="24" height="24" fill="url(#${'grad-' + layerCode})" />
+                      <rect class="workspace-layer-icon" width="24" height="24" fill="url(#${'grad-' + layerCode})" />
                     </svg>
                 `;
                 break;
         };
-        return layerIcon
-    };
-
-    /* Updates Layer Icon when Symbology Changes */
-    function updateLayerIcon(layerCode) {
-        var layerIcon = createLayerIcon(layerCode);
-        layerTable.rows().every(function(){
-            var tableRow = this.data();
-            var tableLayerCode = tableRow[1];
-            if (tableLayerCode === layerCode) {
-                layerTable.cell(this[0][0], 2).data(layerIcon);
-            };
-        });
+        return layerIcon;
     };
 
     /* Updates data viewer for currently selected layer */
     function updateDataViewer(e, dt, type, indexes) {
+
         // Hides Old Attribute Data
         $('#attribute-table-container').addClass('hidden');
         $('#attr-loading').removeClass('hidden');
         $('#attr-error').addClass('hidden');
 
-        // Set the active layer
+        // Sets the active layer
         var layerCode = layerTable.rows(indexes).data().toArray()[0][1]
         var layerType = layerList[layerCode]['layerType'];
         activeLayer = layerCode;
 
-        // Reset the active tab
+        // Resets the active tab
         $('.data-viewer-tab').removeClass('active');
         $('#layer-options-tab').addClass('active');
         $('.data-viewer-content-page').addClass('hidden');
@@ -528,6 +703,7 @@
         switch(layerType) {
             case 'point':
                 $('#zoom-to-layer-btn').removeClass('hidden');
+                $('#download-data-btn').removeClass('hidden');
                 $('#remove-layer-btn').removeClass('hidden');
                 $('#attr-table-tab').removeClass('hidden');
                 $('#fill-color-container').removeClass('hidden');
@@ -543,6 +719,7 @@
                 break;
             case 'line':
                 $('#zoom-to-layer-btn').removeClass('hidden');
+                $('#download-data-btn').removeClass('hidden');
                 $('#remove-layer-btn').removeClass('hidden');
                 $('#attr-table-tab').removeClass('hidden');
                 $('#line-color-container').removeClass('hidden');
@@ -552,6 +729,7 @@
                 break;
             case 'polygon':
                 $('#zoom-to-layer-btn').removeClass('hidden');
+                $('#download-data-btn').removeClass('hidden');
                 $('#remove-layer-btn').removeClass('hidden');
                 $('#attr-table-tab').removeClass('hidden');
                 $('#fill-color-container').removeClass('hidden');
@@ -562,7 +740,9 @@
                 symbologyColorPicker('#line-color-selector', layerList[layerCode]['layerSymbology']['strokeColor'], layerList[layerCode]['layerSymbology']['strokeOpacity']);
                 break;
             case 'raster':
+                $('#color-map-input').val(layerList[layerCode]['layerSymbology']['colormapName']);
                 $('#zoom-to-layer-btn').removeClass('hidden');
+                $('#download-data-btn').removeClass('hidden');
                 $('#remove-layer-btn').removeClass('hidden');
                 $('#color-map-container').removeClass('hidden');
                 break;
@@ -572,10 +752,10 @@
                 break;
         };
 
-        // Show the data viewer
+        // Shows the data viewer
         showDataViewer();
 
-        // Update Attribute Table
+        // Updates Attribute Table
         setUpAttributeTable(layerCode);
     };
 
@@ -662,12 +842,12 @@
 
     /* Changes Layer Display Name */
     function changeLayerDisplayName(evt) {
-        layerList[activeLayer]['displayName'] = $('#layer-name-input').val();
+        layerList[activeLayer]['layerName'] = $('#layer-name-input').val();
         layerTable.rows().every(function(){
             var tableRow = this.data();
             var layerCode = tableRow[1];
             if (layerCode === activeLayer) {
-                layerTable.cell(this[0][0], 3).data(layerList[activeLayer]['displayName'])
+                layerTable.cell(this[0][0], 3).data(layerList[activeLayer]['layerName']);
             };
         });
     };
@@ -701,19 +881,20 @@
             case 'raster':
                 var colorMap = getColorMap($('#color-map-input').val(), layerList[activeLayer]['layerProperties'][0]['max_value'], layerList[activeLayer]['layerProperties'][0]['min_value']);
                 layerList[activeLayer]['layerSymbology']['colormap'] = colorMap;
+                layerList[activeLayer]['layerSymbology']['colormapName'] = $('#color-map-input').val();
                 break;
         };
         var sldBody = SLD_TEMPLATES.getLayerSLD(layerList[activeLayer]['layerType'], layerList[activeLayer]['layerId'], layerList[activeLayer]['layerSymbology']);
         if (sldBodyOld !== sldBody) {
             layerList[activeLayer]['layerWMS'].updateParams({'SLD_BODY': sldBody});
         };
-        updateLayerIcon(activeLayer);
     };
 
     /* Removes a Layer from the Session */
     function removeLayer(evt) {
         layerTable.row('.selected').remove().draw(false);
         map.removeLayer(layerList[activeLayer]['layerSource']);
+        updateDiscoverTable(layerList[activeLayer]['layerId'], 'remove');
         delete layerList[activeLayer];
         activeLayer = null;
         disableDataViewer();
@@ -754,11 +935,11 @@
                         populateAttributeTable(response['results']['layer_properties']);
                     };
                 } else {
-                    console.log('Layer Load Failed')
+                    console.log('Layer Load Failed');
                 };
             },
             error: function(response) {
-                console.log('Layer Load Failed')
+                console.log('Layer Load Failed');
             }
         });
     };
@@ -797,9 +978,137 @@
         attributeTable.draw();
     };
 
+    /* Controls toggle between search tab and workspace tab */
+    function toggleNavTabs(evt) {
+        if ($(this).attr('id') === 'discover-tab-button' || evt === 'discover') {
+            $('#workspace-content').hide();
+            $('#workspace-tab-button').css('background-color', '#D3D3D3');
+            $('#workspace-tab-button').css('border-bottom', '1px solid gray');
+            $('#workspace-tab-button').css('border-left', '1px solid gray');
+            $('#discover-tab-button').css('border-bottom', '1px solid white');
+            $('#discover-tab-button').css('border-right', 'none');
+            $('#discover-content').show();         
+            $('#discover-tab-button').css('background-color', '#FFFFFF');
+            disableDataViewer(null, null, null, null);
+            layerTable.rows().deselect();
+            activeLayer = null;
+        };
+        if ($(this).attr('id') === 'workspace-tab-button' || evt === 'workspace') {
+            $('#workspace-content').show();
+            $('#workspace-tab-button').css('background-color', '#FFFFFF');
+            $('#workspace-tab-button').css('border-bottom', '1px solid white');
+            $('#workspace-tab-button').css('border-left', 'none');
+            $('#discover-tab-button').css('border-bottom', '1px solid gray');
+            $('#discover-tab-button').css('border-right', '1px solid gray');
+            $('#discover-content').hide();
+            $('#workspace-tab-content').css('display', 'flex');
+            $('#discover-tab-button').css('background-color', '#D3D3D3');
+        };
+    };
+
+    /* Cleans up Add Resource modal */
+    function cleanAddResourceModal(evt) {
+        $('#resource-id-input').val('');
+        $('#add-resource-message').addClass('hidden');
+    };
+
+    /* Cleans up Create Resource modal */
+    function cleanCreateResourceModal(evt) {
+        $('#shapefile-upload').val('');
+        $('#geotiff-upload').val('');
+        $('#odm2-upload').val('');
+        $('#create-res-title').val('');
+        $('#create-res-abstract').val('');
+        $('#create-res-keywords').val('');
+    };
+
+    /* Cleans up Export Map modal */
+    function cleanExportMapModal(evt) {
+        $('#export-map-title').val('');
+        $('#export-map-abstract').val('');
+        $('#export-map-keywords').val('');
+        $('#chk-public').prop('checked', false);
+    };
+
+    /* Exports map PNG */
+    function exportMapPNG(evt) {
+        map.once('rendercomplete', function(event) {
+            var canvas = event.context.canvas;
+            if (navigator.msSaveBlob) {
+                navigator.msSaveBlob(canvas.msToBlob(), 'map.png');
+            } else {
+                canvas.toBlob(function(blob) {
+                    saveAs(blob, 'map.png');
+                });
+            };
+        });
+        map.renderSync();
+    };
+
+    /* Switches file upload input */
+    function changeFileInput(evt) {
+        $('#shapefile-upload').val('');
+        $('#geotiff-upload').val('');
+        $('#odm2-upload').val('');
+        $('#shapefile-upload').addClass('hidden');
+        $('#geotiff-upload').addClass('hidden');
+        $('#odm2-upload').addClass('hidden');
+        $('#' + $(this).val() + '-upload').removeClass('hidden');
+    };
+
+    /* Searches discover table */
+    function searchDiscoverTable(evt) {
+        var searchInput = $('#discover-input').val();
+        discoverTable.columns(3).search(searchInput).draw();
+    };
+
+    /* Adds a layer from the discover list */
+    function addLayerFromList(evt) {
+        $(this).
+        $.ajax({
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            type: 'POST',
+            data: {
+                'layer_id': layerId,
+                'type': type,
+                'resource_id': resourceId
+            },
+            url: 'get-single-layers/',
+            success: function(response) {
+                if (response['success'] === true) {
+                    for (var layerCode in response['results']) {
+                        statusCode = addLayerToMap(layerCode, response['results'][layerCode]);
+                    };
+                    if (response['message'] === 'post') {
+                        if (!$.isEmptyObject(response['results'])) {
+                            $('#add-resource-modal').modal('hide');
+                            $('#add-resource-message').addClass('hidden');
+                        } else {
+                            $('#add-resource-message').text('Unable to add any layers from this resource.');
+                        };
+                    };
+                    if (statusCode === 'max') {
+                        alert('Only eight layers may be added to the workspace.');
+                    };
+                    zoomToExtent(response['results']);
+                } else {
+                    console.log('Layer Load Failed');
+                };
+            },
+            error: function(response) {
+                console.log('Layer Load Failed');
+            }
+        });
+    }
+
     /*****************************************************************************************
      ************************************** LISTENERS ****************************************
      *****************************************************************************************/
+
+    /* Listener for toggling nav sidebar tabs */
+    $(document).on('click', '.nav-tab-button', toggleNavTabs);
 
     /* Listener for updating map size on nav toggle */
     $(document).on('click', '.toggle-nav', updateMapSize);
@@ -833,6 +1142,30 @@
 
     /* Listener for removing layer */
     $(document).on('click', '#remove-layer-confirm-btn', removeLayer);
+
+    /* Listener for adding a HydroShare resource */
+    $(document).on('click', '#add-resource-btn', addHydroShareResource);
+
+    /* Listener for cleaning up Add Resource modal when closed */
+    $(document).on('hidden.bs.modal', '#add-resource-modal', cleanAddResourceModal);
+
+    /* Listener for exporting map PNG */
+    $(document).on('click', '#export-png-button', exportMapPNG);
+
+    /* Listener for cleaning up create resource modal */
+    $(document).on('hidden.bs.modal', '#create-resource-modal', cleanCreateResourceModal);
+
+    /* Listener for cleaning up export map modal */
+    $(document).on('hidden.bs.modal', '#export-map-modal', cleanExportMapModal);
+
+    /* Listener for changing file input */
+    $(document).on('change', '.local-file-select', changeFileInput);
+
+    /* Listener for searching discover table on button click */
+    $(document).on('keyup', '#discover-input', searchDiscoverTable);
+
+    /* Listener for adding layer to map */
+    $(document).on('click', '.add-layer-button', addLayerFromDiscoverList);
 
     /*****************************************************************************************
      ************************************ INIT FUNCTIONS *************************************

@@ -9,23 +9,61 @@
 {% endblock %}
 
 {% block app_navigation_items %}
-  <div class="workspace-section-header">
-    <h5>Layers</h5>
+  <div id="nav-tab-button-container">
+    <button id="discover-tab-button" class="nav-tab-button">Discover</button>
+    <button id="workspace-tab-button" class="nav-tab-button">Workspace</button>
   </div>
-  <div id="layer-table-container">
-    <table id="layer-table" class="hover">
-      <thead>
-        <tr>
-          <th id="layer-id"></th>
-          <th id="layer-code"></th>
-          <th id="layer-icon"></th>
-          <th id="layer-name"></th>
-          <th id="layer-drag"></th>
-        </tr>
-      </thead>
-      <tbody>
-      </tbody>
-    </table>
+  <div id="workspace-content">
+    <div id="layer-section-header" class="nav-section-header">
+      <h5>Layers</h5>
+    </div>
+    <div id="workspace-table-container">
+      <table id="workspace-table" class="hover">
+        <thead>
+          <tr>
+            <th id="workspace-layer-id"></th>
+            <th id="workspace-layer-code"></th>
+            <th id="workspace-layer-icon"></th>
+            <th id="workspace-layer-name"></th>
+            <th id="workspace-layer-drag"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="workspace-action-section-header" class="nav-section-header">
+      <h5>Actions</h5>
+    </div>
+    <div id="workspace-action-buttons">
+      <button id="add-resource-modal-button" data-toggle="modal" data-target="#add-resource-modal" class="workspace-action-button">Add Resource</button>
+      <button id="create-resource-modal-button" data-toggle="modal" data-target="#!create-resource-modal" class="workspace-action-button btn-disable">Create Resource</button>
+      <button id="export-png-button" data-toggle="modal" class="workspace-action-button">Export PNG</button>
+      <button id="export-map-modal-button" data-toggle="modal" data-target="#!export-map-modal" class="workspace-action-button btn-disable">Export Map</button>
+    </div>
+  </div>
+  <div id="discover-content">
+    <div id="layer-section-header" class="nav-section-header">
+      <div id="discover-input-container">
+        <input id="discover-input" type="text" placeholder="Find Layers...">
+        <div id="discover-button-container" class="hidden">
+          <span id="discover-button" class="glyphicon glyphicon-filter"></span>
+        </div>
+      </div>
+    </div>
+    <div id="discover-table-container">
+      <table id="discover-table">
+        <thead>
+          <tr>
+            <th id="discover-layer-id"></th>
+            <th id="discover-layer-res-id"></th>
+            <th id="discover-layer-icon"></th>
+            <th id="discover-layer-name"></th>
+            <th id="discover-layer-add"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 {% endblock %}
 
@@ -55,6 +93,7 @@
           <button id="show-layer-btn" type="button" class="action-btn btn btn-default hidden">Show Layer</button>
           <button id="hide-layer-btn" type="button" class="action-btn btn btn-default">Hide Layer</button>
           <button id="zoom-to-layer-btn" type="button" class="action-btn btn btn-default">Zoom to Layer</button>
+          <button disabled id="download-data-btn" type="button" class="action-btn btn btn-default">Download Data</button>
           <button id="remove-layer-btn" type="button" class="action-btn btn btn-danger" data-toggle="modal" data-target="#remove-layer-modal">Remove Layer</button>
         </div>
         <div class="data-viewer-section">
@@ -176,7 +215,8 @@
 
 {# Use the after_app_content block for modals #}
 {% block after_app_content %}
-  <!-- Example Modal -->
+
+  <!-- Help Modal -->
   <div class="modal fade" id="help-modal" tabindex="-1" role="dialog" aria-labelledby="help-modal-label">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
@@ -198,7 +238,7 @@
   </div>
 
   <!-- Remove Layer Confirmation -->
-  <div class="modal fade" id="remove-layer-modal" tabindex="-1" role="dialog" aria-labelledby="help-modal-label">
+  <div class="modal fade" id="remove-layer-modal" tabindex="-1" role="dialog" aria-labelledby="remove-layer-modal-label">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -217,6 +257,112 @@
       </div>
     </div>
   </div>
+
+  <!-- Add Resource Modal -->
+  <div class="modal fade" id="add-resource-modal" tabindex="-1" role="dialog" aria-labelledby="add-resource-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title">Add HydroShare Resource</h5>
+        </div>
+        <div class="modal-body">
+          <h8>Please enter a HydroShare resource ID to get data from. The resource should be public and contain geographic feature and/or geographic raster content.</h8> 
+          <br><br>
+          <form>
+            Resource ID:<br>
+            <input id="resource-id-input" type="text" name="resource-id" style="float:left;">
+            <h8 id="add-resource-message" class="hidden" style="float:left; padding-left: 20px;">Loading...</h8>
+            <br>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button id="add-resource-btn" type="button" class="btn btn-default">Add Resource</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Resource Modal -->
+  <div id="create-resource-modal" class="modal fade modal-admin" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title">Create HydroShare Resource</h5>
+        </div>
+        <div class="modal-body">
+          <h8>This dialog will help you upload local files to HydroShare so you can view them in this app. You can upload either a Shapefile, GeoTIFF, or ODM2 SQLite file. This action will set the resource as public so it can be accessed by the app.</h8><br><br>
+          <div>
+            <select class="local-file-select">
+              <option value="shapefile">Shapefile (Geographic Feature)</option>
+              <option value="geotiff">GeoTiff (Geographic Raster)</option>
+              <option value="odm2">ODM2 SQLite (Time Series)</option>
+            </select>
+            <br><br>
+            <input id="shapefile-upload" class="local-file-upload" type="file" accept=".shp,.prj,.shx,.dbf" multiple>
+            <input id="geotiff-upload" class="local-file-upload hidden" type="file" accept=".tif">
+            <input id="odm2-upload" class="local-file-upload hidden" type="file" accept=".db,.sqlite">
+            <br>
+          </div>
+          <div class="form-group">
+            <label for="create-res-title" class="control-label">Resource Title:</label>
+            <input id="create-res-title" type="text" class="form-control" placeholder="Type the name of your resource here.">
+          </div>
+          <div class="form-group">
+            <label for="create-res-abstract" class="control-label">Resource Abstract:</label>
+            <textarea id="create-res-abstract" rows="6" cols="50" spellcheck="false" class="form-control" placeholder="Type your abstract here." style="resize:none"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="create-res-keywords" class="control-label">Resource Keywords:</label>
+            <input id="create-res-keywords" type="text" class="form-control" placeholder="Type your keywords here.">
+          </div>
+          <div>*Note: This resource will be public.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button id="btn-create-timeseries-resource" type="button" class="btn btn-success">Create Resource</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Map Modal -->
+  <div id="export-map-modal" class="modal fade modal-admin" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title">Export Map to HydroShare</h5>
+        </div>
+        <div class="modal-body">
+          <h8>This dialog will help you create a HydroShare resource containing a reference JSON file defining the current state of your map including any layers and styling information. This resource only contains reference data, it will not include a copy of the data.</h8><br><br>
+          <div class="form-group">
+            <label for="export-map-title" class="control-label">Resource Title:</label>
+            <input id="export-map-title" type="text" class="form-control" placeholder="Type the name of your resource here.">
+          </div>
+          <div class="form-group">
+            <label for="export-map-abstract" class="control-label">Resource Abstract:</label>
+            <textarea id="export-map-abstract" rows="6" cols="50" spellcheck="false" class="form-control" placeholder="Type your abstract here." style="resize:none"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="export-map-keywords" class="control-label">Resource Keywords:</label>
+            <input id="export-map-keywords" type="text" class="form-control" placeholder="Type your keywords here.">
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="" id="chk-public" checked="checked">
+            <label class="form-check-label" for="chk-public">Make Resource Public</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button id="btn-create-timeseries-resource" type="button" class="btn btn-success">Create Resource</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 {% endblock %}
 
 {% block app_actions %}

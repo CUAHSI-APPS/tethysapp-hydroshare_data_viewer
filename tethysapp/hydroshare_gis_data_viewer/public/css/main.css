@@ -8,21 +8,24 @@
 /* ::::::::::::::::::::::: Tethys Map View :::::::::::::::::::::: */
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 
+/* Removes Tethys app content padding */
 #app-content {
     height: 100% !important;
     padding-bottom: 0 !important;
 }
 
+/* Sets up container for data viewer */
 #inner-app-content {
     padding: 0 !important;
     display: flex;
     flex-flow: column;
 }
 
+/* Removes Tethys app actions */
 #app-actions {
     display: none !important;
 }
-
+ /* Sets map size and background */
 #map {
     flex: 1;
     background-color: lightgrey;
@@ -34,7 +37,7 @@
 /* :::::::::::::::::: Tethys Navigation Content ::::::::::::::::: */
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 
-/* Removes Navigation Pane Padding and Adds Right Border */
+/* Removes navigation pane padding and adds right border */
 #app-navigation{
     background-color: white !important;
     padding-left: 0 !important;
@@ -43,15 +46,41 @@
     border-right: 1px solid gray !important;
 }
 
-/* Allows Navigation to Resize Properly With Window */
+/* Allows navigation to resize properly with window */
 .nav {
     display: flex !important;
     flex-direction: column !important;
     padding-bottom: 0 !important;
-    background-color: gainsboro !important;
+    background-color: #D3D3D3 !important;
 }
 
-.workspace-section-header {
+/* Styles the main navigation tab buttons */
+.nav-tab-button {
+    background-color: #D3D3D3;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 10px 16px;
+    font-size: 17px;
+    width: 50%;
+    height:100%;
+}
+
+
+/* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+/* :::::::::::::::::: App Workspace Content ::::::::::::::::: */
+/* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+
+/* Sets up workspace flexbox */
+#workspace-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Styles workspace section headers */
+.nav-section-header {
     flex-shrink: 0;
     overflow: hidden;
     padding-left: 10px;
@@ -60,62 +89,277 @@
     padding-bottom: 3px;
     background-color: #FFFFFF;
     width: 100%;
-    height: 53px;
+    height: 51px;
     border-bottom: 1px solid gray;
 }
 
-#layer-table {
+/* Makes workspace-table grow to fit space */
+#workspace-table-container {
+    flex-grow: 1;
+    overflow: hidden;
+    overflow-y: auto;
+}
+
+/* Styles action section header */
+#workspace-action-section-header {
+    border-top: 1px solid gray;
+}
+
+/* Removes bottom border of table */
+#workspace-table {
 	border-bottom: none;
 }
 
-#layer-table td:nth-child(1) { 
+/* Sets width of icon cell in layer table */
+#workspace-table td:nth-child(1) { 
 	width: 20px; 
 }
 
-#layer-table td:nth-child(3) { 
+#workspace-table td:nth-child(2) {
+    max-width: 175px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Sets width of move icon in layer table */
+#workspace-table td:nth-child(3) { 
     width: 20px; 
 }
 
-#layer-table thead {
+/* Hides layer table header */
+#workspace-table thead {
     display: none;
 }
 
+/* Sets layer move icon size */
 .glyph-layer-move {
     margin-top: 4px;
     font-size: 16px;
 }
 
-.layer-icon {
+/* Styles layer icon */
+.workspace-layer-icon {
+    padding-bottom: 5px !important;
     cursor: pointer;
 }
 
-.layer-name {
+/* Styles basemap layer icon */
+#basemap-icon {
+    padding-bottom: 5px;
+}
+
+/* Changes cursor to a pointer on row hover */
+.workspace-layer-name {
     cursor: pointer;
 }
 
-#layer-table_wrapper {
+/* Sets layer table row spacing */
+#workspace-table_wrapper {
     padding-left: 10px;
     padding-right: 10px;
 }
 
-#layer-table {
+/* Sets layer table row spacing */
+#workspace-table {
     border-collapse: separate; 
     border-spacing: 0 10px; 
 }
 
-.layer-table-row {
+/* Fixes layer table row borders */
+.workspace-table-row {
     border-radius: 10px !important;
     outline: 1px solid gray;
     outline-offset: -1px;
 }
 
+/* Bolds rows of the layer table while being moved */
 .dt-rowReorder-moving {
     outline: 2px solid black !important;
     outline-offset: -2px !important;
 }
 
+/* Styles the dragged row of the layer table */
 .dt-rowReorder-float {
     outline: 0px solid white !important;
+}
+
+/* Styles the action button section of the workspace */
+.action-list {
+    background-color: #D3D3D3;
+    padding: 3px;
+    flex-shrink: 0;
+}
+
+/* Spaces the action buttons */
+#workspace-action-buttons {
+    padding: 5px;
+}
+
+/* Styles the action buttons */
+.workspace-action-button {
+    float: left;
+    height: 42px;
+    width: 134px;
+    background: #FFFFFF;
+    border: 1px solid gray;
+    margin: 5px;
+}
+
+/* Makes the action buttons darker when hovered over */
+.workspace-action-button:hover {
+    background-color: #F0F0F0;
+}
+
+/* Removes action button click outline */
+.workspace-action-button:focus {
+    outline: 0;
+}
+
+/* Makes action buttons darker when clicked */
+.workspace-action-button:active {
+    background: #CCCCCC;
+}
+
+.workspace-layer-name {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+/* :::::::::::::::::: App Workspace Content ::::::::::::::::: */
+/* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+
+#discover-input {
+    outline: none;
+    background-color: whitesmoke;
+    border: none;
+    margin-left: 6px;
+    height: 100%;
+    width: 220px;
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+#discover-input-container {
+    margin-top: 4px;
+    margin-bottom: 4px;
+    height: 36px;
+    font-size: 16px;
+    border: solid;
+    border-color: lightgray;
+    border-width: 1px;
+    width: 100%;
+    background-color: whitesmoke;
+}
+
+#discover-button-container {
+    float: right;
+    height: 24px;
+    width: 44px;
+    padding-top: 2px;
+    padding-left: 13px;
+    padding-right: 13px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.glyphicon-filter {
+    font-size: 18px;
+}
+
+.glyphicon-filter:hover {
+    color: #6699ff;
+    cursor: pointer;
+}
+
+#discover-table thead {
+    display: none;
+}
+
+#discover-content {
+    height: 100%;
+}
+
+#discover-table {
+    border-bottom: none;
+}
+
+#discover-table_wrapper {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#discover-content {
+    display: flex;
+    flex-direction: column; 
+}
+
+.glyphicon-plus:hover {
+    color: #6699ff;
+    cursor: pointer;
+}
+
+#discover-table-container {
+    flex-grow: 1;
+    overflow: hidden;
+    overflow-y: auto;
+}
+
+#discover-table {
+    border-collapse: separate; 
+    border-spacing: 0 10px; 
+}
+
+.discover-table-row {
+    border-radius: 10px !important;
+    outline: 1px solid gray;
+    outline-offset: -1px;
+}
+
+#discover-table_filter {
+    display: none;
+}
+
+#discover-table_length {
+    display: none;
+}
+
+.dataTables_empty {
+    background-color: #D3D3D3;
+}
+
+.discover-layer-icon-image {
+    height: 26px;
+}
+
+/* Sets width of icon cell in layer table */
+#discover-table td:nth-child(1) { 
+    width: 20px; 
+}
+
+#workspace-table td:nth-child(2) {
+    max-width: 175px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Sets width of move icon in layer table */
+#discover-table td:nth-child(3) { 
+    width: 20px; 
+}
+
+.discover-layer-loading-icon {
+    height: 20px;
+}
+
+.glyphicon-plus {
+    padding: 3px;
+    font-size: 16px;
+}
+
+.glyphicon-ok {
+    padding: 3px;
+    font-size: 16px;
 }
 
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
@@ -197,7 +441,7 @@
 }
 
 .data-viewer-content {
-	height: 210px;
+	height: 225px;
 	width: 100%;
 	background-color: white;
 }
@@ -229,14 +473,21 @@
     margin-right: 30px;
 }
 
+
 .action-btn {
     margin-bottom: 10px;
 }
 
 
+#add-resource-message {
+    float: left;
+    padding-left: 20px;
+}
 
-
-
+.workspace-layer-icon {
+    padding-bottom: 4px;
+    height: 29px;
+}
 
 #attribute-table-container {
     width: 100%;
@@ -244,7 +495,23 @@
     overflow: hidden;
 }
 
-#attribute-table
+.btn-disable {
+    background-color: #ffffff;
+    color: #C0C0C0;
+    cursor: not-allowed;
+}
+
+.btn-disable:hover {
+    background-color: #ffffff;
+    color: #C0C0C0;
+    cursor: not-allowed;
+}
+
+.btn-disable:active {
+    background-color: #ffffff;
+    color: #C0C0C0;
+    cursor: not-allowed;
+}
 
 #attribute-table tr td {
     font-size: 12px;
@@ -253,15 +520,4 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     height: 25px;
-}
-
-.dataTables_scroll {
-    height: 485px !important;
-}
-
-.dataTables_scrollBody {
-    height: 420px;
-    background-color: #E4E4E4;
-    border-right: 1px solid #E4E4E4;
-    border-left: 1px solid #E4E4E4;
 }
