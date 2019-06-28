@@ -9,15 +9,15 @@
 {% endblock %}
 
 {% block app_navigation_items %}
-  <div id="nav-tab-button-container">
-    <button id="discover-tab-button" class="nav-tab-button">Discover</button>
-    <button id="workspace-tab-button" class="nav-tab-button">Workspace</button>
-  </div>
-  <div id="workspace-content">
-    <div id="layer-section-header" class="nav-section-header">
+  <div id="nav-container">
+    <div id="nav-tab-button-container">
+      <button id="discover-tab-button" class="nav-tab-button">Discover</button>
+      <button id="workspace-tab-button" class="nav-tab-button">Workspace</button>
+    </div>
+    <div id="workspace-layer-section-header" class="workspace-content">
       <h5>Layers</h5>
     </div>
-    <div id="workspace-table-container">
+    <div id="workspace-table-container" class="workspace-content">
       <table id="workspace-table" class="hover">
         <thead>
           <tr>
@@ -31,18 +31,16 @@
         <tbody></tbody>
       </table>
     </div>
-    <div id="workspace-action-section-header" class="nav-section-header">
+    <div id="workspace-action-section-header" class="workspace-content">
       <h5>Actions</h5>
     </div>
-    <div id="workspace-action-buttons">
+    <div id="workspace-action-buttons" class="workspace-content">
       <button id="add-resource-modal-button" data-toggle="modal" data-target="#add-resource-modal" class="workspace-action-button">Add Resource</button>
       <button id="create-resource-modal-button" data-toggle="modal" data-target="#!create-resource-modal" class="workspace-action-button btn-disable">Create Resource</button>
       <button id="export-png-button" data-toggle="modal" class="workspace-action-button">Export PNG</button>
       <button id="export-map-modal-button" data-toggle="modal" data-target="#!export-map-modal" class="workspace-action-button btn-disable">Export Map</button>
     </div>
-  </div>
-  <div id="discover-content">
-    <div id="layer-section-header" class="nav-section-header">
+    <div id="discover-layer-section-header" class="discover-content">
       <div id="discover-input-container">
         <input id="discover-input" type="text" placeholder="Find Layers...">
         <div id="discover-button-container" class="hidden">
@@ -50,7 +48,7 @@
         </div>
       </div>
     </div>
-    <div id="discover-table-container">
+    <div id="discover-table-container" class="discover-content">
       <table id="discover-table">
         <thead>
           <tr>
@@ -77,6 +75,9 @@
         </li>
         <li id="attr-table-tab" class="data-viewer-tab"> 
           <a href=# >Attribute Table</a> 
+        </li>
+        <li id="ts-plot-tab" class="data-viewer-tab ts-plot-disabled">
+          <a href=# >Time Series Plot</a>
         </li>
       </ul>
       <div id="data-viewer-show" class="data-viewer-toggle hidden"  data-toggle="tooltip" data-placement="left" title="Expand">
@@ -208,6 +209,9 @@
         </div>
         <div id="attr-loading">Loading Attribute Table...</div>
         <div id="attr-error" class="hidden">Unable to Load Attribute Table</div>
+      </div>
+      <div id="ts-plot-tab-view" class="data-viewer-content-page hidden">
+        <div id="plot"></div>
       </div>
     </div>
   </div>

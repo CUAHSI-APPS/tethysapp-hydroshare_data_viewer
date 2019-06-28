@@ -48,10 +48,16 @@
 
 /* Allows navigation to resize properly with window */
 .nav {
-    display: flex !important;
-    flex-direction: column !important;
     padding-bottom: 0 !important;
     background-color: #D3D3D3 !important;
+}
+
+/*  */
+#nav-container {
+    background-color: #D3D3D3;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Styles the main navigation tab buttons */
@@ -67,21 +73,26 @@
     height:100%;
 }
 
+#nav-tab-button-container {
+    height: 50px;
+}
+
 
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* :::::::::::::::::: App Workspace Content ::::::::::::::::: */
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 
 /* Sets up workspace flexbox */
-#workspace-content {
+/*#workspace-content {
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     height: 100%;
-}
+}*/
 
 /* Styles workspace section headers */
-.nav-section-header {
-    flex-shrink: 0;
+/*.nav-section-header {
+    flex: 0 1 auto;
     overflow: hidden;
     padding-left: 10px;
     padding-right: 10px;
@@ -91,6 +102,17 @@
     width: 100%;
     height: 51px;
     border-bottom: 1px solid gray;
+}*/
+#workspace-layer-section-header {
+    flex-shrink: 0;
+    height: 51px;
+    border-bottom: 1px solid gray;
+    background-color: #FFFFFF;
+    width: 100%;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 3px;
+    padding-bottom: 3px;
 }
 
 /* Makes workspace-table grow to fit space */
@@ -103,6 +125,15 @@
 /* Styles action section header */
 #workspace-action-section-header {
     border-top: 1px solid gray;
+    flex-shrink: 0;
+    height: 51px;
+    border-bottom: 1px solid gray;
+    background-color: #FFFFFF;
+    width: 100%;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 3px;
+    padding-bottom: 3px;
 }
 
 /* Removes bottom border of table */
@@ -183,15 +214,9 @@
     outline: 0px solid white !important;
 }
 
-/* Styles the action button section of the workspace */
-.action-list {
-    background-color: #D3D3D3;
-    padding: 3px;
-    flex-shrink: 0;
-}
-
 /* Spaces the action buttons */
 #workspace-action-buttons {
+    flex: 0 1 auto;
     padding: 5px;
 }
 
@@ -229,6 +254,18 @@
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* :::::::::::::::::: App Workspace Content ::::::::::::::::: */
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+
+#discover-layer-section-header {
+    flex-shrink: 0;
+    height: 51px;
+    border-bottom: 1px solid gray;
+    background-color: #FFFFFF;
+    width: 100%;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
 
 #discover-input {
     outline: none;
@@ -287,11 +324,6 @@
 #discover-table_wrapper {
     padding-left: 10px;
     padding-right: 10px;
-}
-
-#discover-content {
-    display: flex;
-    flex-direction: column; 
 }
 
 .glyphicon-plus:hover {
@@ -367,7 +399,7 @@
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 
 .data-viewer-header {
-	height: 40px;
+	height: 41px;
     width: 100%;
 	border-top: 1px solid #008080;
     background-color: #008080;
@@ -462,7 +494,9 @@
 
 .data-viewer-section-content {
     display: flex;
-    flex-flow: column wrap;
+    flex-direction: column;
+    flex-wrap: wrap;
+    height: 100%;
 }
 
 .symbology-input-container {
@@ -512,6 +546,30 @@
     color: #C0C0C0;
     cursor: not-allowed;
 }
+
+#layer-options-tab-view {
+    overflow-y: auto;
+}
+
+
+
+
+.ts-plot-disabled {
+    color: silver !important;
+    cursor: not-allowed;
+}
+
+.ts-plot-disabled > a {
+    color: silver !important;
+    cursor: not-allowed;
+}
+
+
+#plot {
+    height: 100%;
+    width: 100%;
+}
+
 
 #attribute-table tr td {
     font-size: 12px;

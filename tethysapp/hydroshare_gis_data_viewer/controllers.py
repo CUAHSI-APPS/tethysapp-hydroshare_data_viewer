@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from lxml import etree
 import requests
 import json
@@ -16,7 +17,7 @@ def home(request):
     return render(request, 'hydroshare_gis_data_viewer/home.html', context)
 
 
-def get_layers(request):
+def get_hydroshare_layers(request):
     """
     AJAX Controller for getting HydroShare resource layers.
     """
@@ -54,14 +55,16 @@ def get_layers(request):
     hydroserver_url = "https://geoserver.hydroshare.org/hydroserver"
     layer_list = {}
     for resource_id in resource_id_list:
+
+        # Gets list of available GeoServer Layers
         request_url = f"{geoserver_url}/wms?service=WMS&request=GetCapabilities&version=1.3.0&namespace=HS-{resource_id}"
         response = requests.get(request_url)
         root = etree.fromstring(response.content)
+
+        # Loops through each available layer on GeoServer
         for layer in list(root.iter("{http://www.opengis.net/wms}Layer"))[1:]:
             layer_id = layer.find("{http://www.opengis.net/wms}Name").text
-            print(request_layer_id)
             if request_layer_id != "" and request_layer_id != layer_id:
-                print('skipping')
                 continue
             layer_code = get_layer_code()
             layer_name = ":".join(layer_id.split(":")[1:])
@@ -94,6 +97,53 @@ def get_layers(request):
                 "layerProperties": layer_properties,
             }
 
+        # Gets a list of available HydroServer databases
+        request_url = f"{hydroserver_url}/rest/network/{resource_id}/databases/"
+        response = requests.get(request_url)
+        try:
+            database_list = json.loads(response.content)
+        except:
+            database_list = []
+
+        # Loops through each available HydroServer database
+        for database in database_list:
+            database_id = database["database_id"]
+            if request_layer_id != "" and request_layer_id != f"{resource_id}:{database_id}":
+                continue
+            layer_code = get_layer_code()
+            layer_name = database["database_name"]
+            request_url = f"{hydroserver_url}/rest/{resource_id}/{database_id}/refts/"
+            response = requests.get(request_url)
+            refts_object = json.loads(response.content)
+            geojson_object = {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [
+                                x["site"]["longitude"],
+                                x["site"]["latitude"]
+                            ]
+                        }
+                    } for x in refts_object["timeSeriesReferenceFile"]["referencedTimeSeries"]
+                ]
+            }
+            layer_list[layer_code] = {
+                "layerName": layer_name,
+                "layerId": f"{resource_id}:{database_id}",
+                "layerType": "timeseries",
+                "layerGeometry": geojson_object,
+                "layerExtent": {
+                    "minX": min([x["site"]["longitude"] for x in refts_object["timeSeriesReferenceFile"]["referencedTimeSeries"]]),
+                    "minY": min([x["site"]["latitude"] for x in refts_object["timeSeriesReferenceFile"]["referencedTimeSeries"]]),
+                    "maxX": max([x["site"]["longitude"] for x in refts_object["timeSeriesReferenceFile"]["referencedTimeSeries"]]),
+                    "maxY": max([x["site"]["latitude"] for x in refts_object["timeSeriesReferenceFile"]["referencedTimeSeries"]])
+                },
+                "layerProperties": []
+            }
+
     # -------------------------- #
     #   RETURNS DATA TO CLIENT   #
     # -------------------------- #
@@ -105,7 +155,7 @@ def get_layers(request):
     return JsonResponse(return_obj)
 
 
-def get_layer_list(request):
+def get_discovery_layer_list(request):
     """
     AJAX Controller for getting layer list.
     """
@@ -132,6 +182,7 @@ def get_layer_list(request):
     # ------------------- #
 
     geoserver_url = "https://geoserver.hydroshare.org/geoserver"
+    hydroserver_url = "https://geoserver.hydroshare.org/hydroserver"
     layer_list = []
 
     # Get Vector Layers
@@ -172,6 +223,22 @@ def get_layer_list(request):
                 "type": "RASTER"
             })
 
+    # Get Time Series Layers
+    request_url = f"{hydroserver_url}/rest/networks/"
+    response = requests.get(request_url)
+    wof_networks = json.loads(response.content)
+    for wof_network in wof_networks:
+        request_url = f"{hydroserver_url}/rest/network/{wof_network['network_id']}/databases/"
+        response = requests.get(request_url)
+        wof_databases = json.loads(response.content)
+        for wof_database in wof_databases:
+            layer_list.append({
+                "id": wof_database["database_id"],
+                "name": wof_database["database_name"],
+                "resource_id": wof_database["network_id"],
+                "type": "TIMESERIES"
+            })
+
     # -------------------------- #
     #   RETURNS DATA TO CLIENT   #
     # -------------------------- #
@@ -210,46 +277,87 @@ def get_attribute_table(request):
 
     layer_id = request.POST.get("layer_id")
     layer_code = request.POST.get("layer_code")
+    layer_type = request.POST.get("layer_type")
 
     # ----------------------- #
     #   GETS ATTRIBUTE DATA   #
     # ----------------------- #
 
-    geoserver_url = "https://geoserver.hydroshare.org/geoserver"
-    params = {
-        "service": "WFS",
-        "version": "1.3.0",
-        "request": "describeFeatureType",
-        "typeName": layer_id,
-        "outputFormat": "application/json"
-    }
-    request_url = f"{geoserver_url}/wfs/"
-    response = requests.get(request_url, params=params)
+    if layer_type == "point" or layer_type == "line" or layer_type == "polygon":
+        geoserver_url = "https://geoserver.hydroshare.org/geoserver"
+        params = {
+            "service": "WFS",
+            "version": "1.3.0",
+            "request": "describeFeatureType",
+            "typeName": layer_id,
+            "outputFormat": "application/json"
+        }
+        request_url = f"{geoserver_url}/wfs/"
+        response = requests.get(request_url, params=params)
 
-    layer_properties = {
-        "properties": [],
-        "values": []
-    }
-    values = []
+        layer_properties = {
+            "properties": [],
+            "values": []
+        }
+        values = []
 
-    for attr in json.loads(response.content)["featureTypes"][0]["properties"]:
-        if attr["name"] != 'the_geom':
-            params = {
-                "service": "WFS",
-                "version": "1.3.0",
-                "request": "GetFeature",
-                "typeName": layer_id,
-                "propertyName": attr["name"],
-                "outputFormat": "application/json",
-                "startIndex": 0,
-                "count": 100000
-            }
-            request_url = f"{geoserver_url}/wfs/"
-            response = requests.get(request_url, params=params)
-            layer_properties["properties"].append(attr["name"])
-            values.append([i["properties"][attr["name"]] for i in json.loads(response.content)["features"]])
-    layer_properties["values"] = list(map(list, zip(*values)))
-    print("FINISHED")
+        for attr in json.loads(response.content)["featureTypes"][0]["properties"]:
+            if attr["name"] != 'the_geom':
+                params = {
+                    "service": "WFS",
+                    "version": "1.3.0",
+                    "request": "GetFeature",
+                    "typeName": layer_id,
+                    "propertyName": attr["name"],
+                    "outputFormat": "application/json",
+                    "startIndex": 0,
+                    "count": 100000
+                }
+                request_url = f"{geoserver_url}/wfs/"
+                response = requests.get(request_url, params=params)
+                layer_properties["properties"].append(attr["name"])
+                values.append([i["properties"][attr["name"]] for i in json.loads(response.content)["features"]])
+        layer_properties["values"] = list(map(list, zip(*values)))
+
+    elif layer_type == "timeseries":
+        hydroserver_url = "https://geoserver.hydroshare.org/hydroserver"
+        resource_id = layer_id.split(":")[0]
+        database_id = ":".join(layer_id.split(":")[1:])
+        request_url = f"{hydroserver_url}/rest/{resource_id}/{database_id}/refts/"
+        response = requests.get(request_url)
+        refts_object = json.loads(response.content)
+        layer_properties = {
+            "properties": [
+                "Site Name",
+                "Site Code",
+                "Variable Name",
+                "Variable Code",
+                "Sample Medium",
+                "Start Date",
+                "End Date",
+                "Value Count",
+                "Method Link",
+                "Method Description",
+                "Latitude",
+                "Longitude"
+            ],
+            "values": [
+                [
+                    x["site"]["siteName"],
+                    x["site"]["siteCode"],
+                    x["variable"]["variableName"],
+                    x["variable"]["variableCode"],
+                    x["sampleMedium"],
+                    x["beginDate"],
+                    x["endDate"],
+                    x["valueCount"],
+                    x["method"]["methodLink"],
+                    x["method"]["methodDescription"],
+                    x["site"]["latitude"],
+                    x["site"]["longitude"]
+                ]
+            for x in refts_object["timeSeriesReferenceFile"]["referencedTimeSeries"]]
+        }
 
     # -------------------------- #
     #   RETURNS DATA TO CLIENT   #
@@ -260,3 +368,71 @@ def get_attribute_table(request):
     return_obj["results"]["layer_code"] = layer_code
 
     return JsonResponse(return_obj)  
+
+
+def get_timeseries_data(request):
+    """
+    AJAX Controller for getting time series data.
+    """
+
+    return_obj = {
+        "success": False,
+        "message": None,
+        "results": {}
+    }
+
+    # -------------------- #
+    #   VERIFIES REQUEST   #
+    # -------------------- #
+
+    if not (request.is_ajax() and request.method == "POST"):
+        return_obj["success"] = False
+        return_obj["message"] = "Unable to communicate with server."
+        return_obj["results"] = {}
+
+        return JsonResponse(return_obj)
+
+    # -------------------------- #
+    #   GETS DATA FROM REQUEST   #
+    # -------------------------- #
+
+    layer_id = request.POST.get("layer_id")
+    site_code = request.POST.get("site_code")
+    variable_code = request.POST.get("var_code")
+    site_name = request.POST.get("site_name")
+    variable_name = request.POST.get("var_name")
+
+    # ------------------------- #
+    #   GETS TIME SERIES DATA   #
+    # ------------------------- #
+
+    network_id = layer_id.split(":")[0]
+    database_id = ":".join(layer_id.split(":")[1:])
+    hydroserver_url = "https://geoserver.hydroshare.org/hydroserver"
+    request_url = f"{hydroserver_url}/wof/{network_id}/{database_id}/values/"
+    params = {
+        "site_code": site_code,
+        "variable_code": variable_code
+    }
+    response = requests.get(request_url, params=params)
+    waterml = etree.fromstring(response.content)
+    no_data_value = waterml.find("{http://www.cuahsi.org/waterML/1.1/}timeSeries").find("{http://www.cuahsi.org/waterML/1.1/}variable").find("{http://www.cuahsi.org/waterML/1.1/}noDataValue").text
+    timeseries_data = [[
+        x.get('dateTime'),
+        x.text if x.text != no_data_value else None
+    ] for x in waterml.find("{http://www.cuahsi.org/waterML/1.1/}timeSeries").find("{http://www.cuahsi.org/waterML/1.1/}values").iter("{http://www.cuahsi.org/waterML/1.1/}value")]
+
+    # -------------------------- #
+    #   RETURNS DATA TO CLIENT   #
+    # -------------------------- #
+
+    return_obj["success"] = True
+    return_obj["results"]["timeseries_data"] = timeseries_data
+    return_obj["results"]["no_data_value"] = no_data_value
+    return_obj["results"]["site_name"] = site_name
+    return_obj["results"]["variable_name"] = variable_name
+
+    return JsonResponse(return_obj)  
+
+
+

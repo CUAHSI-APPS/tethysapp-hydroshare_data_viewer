@@ -4,6 +4,38 @@ var SLD_TEMPLATES = {};
 
     this.getLayerSLD = function(layerType, layerRef, layerSymbology) {
         switch (layerType) {
+            case 'timeseries':
+                switch (layerSymbology['type']) {
+                    case 'simple':
+                        switch (layerSymbology['shape']) {
+                            case 'circle':
+                                var vectorStyle = new ol.style.Style({
+                                    'image': new ol.style.Circle({
+                                        'radius': layerSymbology['size'],
+                                        'fill': new ol.style.Fill({
+                                            'color': layerSymbology['fillColor']
+                                        }),
+                                        'stroke': new ol.style.Stroke({
+                                            'color': layerSymbology['strokeColor'],
+                                            'width': layerSymbology['strokeWidth']
+                                        })
+                                    })
+                                });
+                                break;
+                            case 'triangle':
+                                var vectorStyle = new ol.style.Style({
+
+                                });
+                                break;
+                            case 'square':
+                                var vectorStyle = new ol.style.Style({
+
+                                });
+                                break;
+                        };
+                        return vectorStyle;
+                };
+                break;
             case 'point':
                 switch (layerSymbology['type']) {
                     case 'simple':

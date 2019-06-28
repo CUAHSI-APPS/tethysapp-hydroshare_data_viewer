@@ -30,9 +30,9 @@ class HydroshareGisDataViewer(TethysAppBase):
                 controller='hydroshare_gis_data_viewer.controllers.home'
             ),
             UrlMap(
-                name='get-layers',
-                url='hydroshare-gis-data-viewer/get-layers',
-                controller='hydroshare_gis_data_viewer.controllers.get_layers'
+                name='get-hydroshare-layers',
+                url='hydroshare-gis-data-viewer/get-hydroshare-layers',
+                controller='hydroshare_gis_data_viewer.controllers.get_hydroshare_layers'
             ),
             UrlMap(
                 name='get-attribute-table',
@@ -40,9 +40,14 @@ class HydroshareGisDataViewer(TethysAppBase):
                 controller='hydroshare_gis_data_viewer.controllers.get_attribute_table'
             ),
             UrlMap(
-                name='get-layer-list',
-                url='hydroshare-gis-data-viewer/get-layer-list',
-                controller='hydroshare_gis_data_viewer.controllers.get_layer_list'
+                name='get-discovery-layer-list',
+                url='hydroshare-gis-data-viewer/get-discovery-layer-list',
+                controller='hydroshare_gis_data_viewer.controllers.get_discovery_layer_list'
+            ),
+            UrlMap(
+                name='get-timeseries-data',
+                url='hydroshare-gis-data-viewer/get-timeseries-data',
+                controller='hydroshare_gis_data_viewer.controllers.get_timeseries_data'
             ),
         )
 
