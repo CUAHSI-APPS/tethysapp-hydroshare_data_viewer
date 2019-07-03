@@ -525,7 +525,7 @@
 
 #attribute-table-container {
     width: 100%;
-    height: 210px;
+    height: 225px;
     overflow: hidden;
 }
 
@@ -568,6 +568,19 @@
 #plot {
     height: 100%;
     width: 100%;
+}
+
+#plot-loading {
+    height: 100%;
+    width: 100%;
+    overflow-y: hidden;
+}
+
+.main-loading-animation {
+    display: block;
+    margin: auto;
+    padding-top: 60px;
+    padding-bottom: 60px;
 }
 
 

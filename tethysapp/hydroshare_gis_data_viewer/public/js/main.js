@@ -1111,6 +1111,8 @@
     /* Updates Plot Viewer */
     function updatePlotViewer(e, dt, type, indexes) {
         if (layerList[activeLayer]['layerType'] === 'timeseries' && e['type'] === 'select') {
+            $('#plot-loading').removeClass('hidden');
+            $('#plot').addClass('hidden');
             $('#ts-plot-tab').removeClass('ts-plot-disabled');
             var rowData = attributeTable.rows( { selected: true }).data();
             var extent = ol.extent.createEmpty();
@@ -1148,6 +1150,8 @@
                             })
                         };
                         timeseriesPlot = new CanvasJS.Chart('plot', {
+                            height: 225,
+                            responsive: true,
                             animationEnabled: true,
                             zoomEnabled: true,
                             title: {
@@ -1165,7 +1169,10 @@
                                 dataPoints: timeseriesData
                             }]
                         });
+                        $('#plot-loading').addClass('hidden');
+                        $('#plot').removeClass('hidden');
                         timeseriesPlot.render();
+                        timeseriesPlot.update();
                         console.log(timeseriesData)
                     } else {
                         console.log('Layer Load Failed');

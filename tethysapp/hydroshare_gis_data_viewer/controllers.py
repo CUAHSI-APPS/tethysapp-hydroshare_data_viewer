@@ -433,6 +433,3 @@ def get_timeseries_data(request):
     return_obj["results"]["variable_name"] = variable_name
 
     return JsonResponse(return_obj)  
-
-
-
