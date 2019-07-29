@@ -147,9 +147,11 @@
 }
 
 #workspace-table td:nth-child(2) {
-    max-width: 175px;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 175px;
+    max-width: 175px;
 }
 
 /* Sets width of move icon in layer table */
@@ -342,6 +344,11 @@
     border-spacing: 0 10px; 
 }
 
+.discover-layer-name {
+    max-width: 80px;
+    overflow: hidden;
+}
+
 .discover-table-row {
     border-radius: 10px !important;
     outline: 1px solid gray;
@@ -369,10 +376,12 @@
     width: 20px; 
 }
 
-#workspace-table td:nth-child(2) {
-    max-width: 175px;
+#discover-table td:nth-child(2) {
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 175px;
+    max-width: 175px;
 }
 
 /* Sets width of move icon in layer table */
@@ -494,7 +503,7 @@
 
 .data-viewer-section-content {
     display: flex;
-    flex-direction: column;
+    /*flex-direction: column;*/
     flex-wrap: wrap;
     height: 100%;
 }

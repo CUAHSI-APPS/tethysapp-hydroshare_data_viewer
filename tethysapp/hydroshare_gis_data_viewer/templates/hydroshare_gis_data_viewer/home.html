@@ -31,10 +31,10 @@
         <tbody></tbody>
       </table>
     </div>
-    <div id="workspace-action-section-header" class="workspace-content">
+    <div id="workspace-action-section-header" class="workspace-ontent hidden">
       <h5>Actions</h5>
     </div>
-    <div id="workspace-action-buttons" class="workspace-content">
+    <div id="workspace-action-buttons" class="workspace-ontent hidden">
       <button id="add-resource-modal-button" data-toggle="modal" data-target="#add-resource-modal" class="workspace-action-button">Add Resource</button>
       <button id="create-resource-modal-button" data-toggle="modal" data-target="#!create-resource-modal" class="workspace-action-button btn-disable">Create Resource</button>
       <button id="export-png-button" data-toggle="modal" class="workspace-action-button">Export PNG</button>
@@ -217,6 +217,10 @@
         </div>
       </div>
     </div>
+  </div>
+  <div id="config-data" class="hidden">
+    <div id=geoserver_url>{{geoserver_url}}</div>
+    <div id=hydroserver_url>{{hydroserver_url}}</div>
   </div>
 {% endblock %}
 

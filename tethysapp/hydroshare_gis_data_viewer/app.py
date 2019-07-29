@@ -1,4 +1,5 @@
 from tethys_sdk.base import TethysAppBase, url_map_maker
+from tethys_sdk.app_settings import CustomSetting
 
 
 class HydroshareGisDataViewer(TethysAppBase):
@@ -32,23 +33,41 @@ class HydroshareGisDataViewer(TethysAppBase):
             UrlMap(
                 name='get-hydroshare-layers',
                 url='hydroshare-gis-data-viewer/get-hydroshare-layers',
-                controller='hydroshare_gis_data_viewer.controllers.get_hydroshare_layers'
+                controller='hydroshare_gis_data_viewer.ajax_controllers.get_hydroshare_layers'
             ),
             UrlMap(
                 name='get-attribute-table',
                 url='hydroshare-gis-data-viewer/get-attribute-table',
-                controller='hydroshare_gis_data_viewer.controllers.get_attribute_table'
+                controller='hydroshare_gis_data_viewer.ajax_controllers.get_attribute_table'
             ),
             UrlMap(
                 name='get-discovery-layer-list',
                 url='hydroshare-gis-data-viewer/get-discovery-layer-list',
-                controller='hydroshare_gis_data_viewer.controllers.get_discovery_layer_list'
+                controller='hydroshare_gis_data_viewer.ajax_controllers.get_discovery_layer_list'
             ),
             UrlMap(
                 name='get-timeseries-data',
                 url='hydroshare-gis-data-viewer/get-timeseries-data',
-                controller='hydroshare_gis_data_viewer.controllers.get_timeseries_data'
+                controller='hydroshare_gis_data_viewer.ajax_controllers.get_timeseries_data'
             ),
         )
 
         return url_maps
+
+    def custom_settings(self):
+        custom_settings = (
+            CustomSetting(
+                name='geoserver_url',
+                type=CustomSetting.TYPE_STRING,
+                description='GeoServer URL',
+                required=True
+            ),
+            CustomSetting(
+                name='hydroserver_url',
+                type=CustomSetting.TYPE_STRING,
+                description='HydroServer URL',
+                required=True
+            ),
+        )
+
+        return custom_settings

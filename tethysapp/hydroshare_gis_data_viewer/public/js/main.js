@@ -25,7 +25,6 @@
         // Gets URL query parameters.
         var urlParams = new URLSearchParams(window.location.search);
         var resList = [...new Set(urlParams.getAll('res_id'))];
-        //history.pushState(null, "", location.href.split("?")[0]);
 
         // Initializes map div.
         map = new ol.Map({
@@ -255,7 +254,7 @@
 
             // Creates layer WMS object
             layerList[layerCode]['layerWMS'] = new ol.source.ImageWMS({
-                url: 'https://geoserver.hydroshare.org/geoserver/wms',
+                url: 'https://geoserver-beta.hydroshare.org/geoserver/wms',
                 params: {'LAYERS': layerList[layerCode]['layerId'], 'SLD_BODY': sldBody},
                 serverType: 'geoserver',
                 crossOrigin: 'Anonymous'
