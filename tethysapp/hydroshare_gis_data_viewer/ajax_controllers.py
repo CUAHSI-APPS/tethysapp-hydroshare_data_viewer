@@ -43,6 +43,7 @@ def get_hydroshare_layers(request):
     geoserver_url = app.get_custom_setting("geoserver_url")
     hydroserver_url = app.get_custom_setting("hydroserver_url")
     layer_list = {}
+    print(resource_id_list)
     for resource_id in resource_id_list:
 
         if geoserver_url != "None":
@@ -88,7 +89,7 @@ def get_hydroshare_layers(request):
                 }
 
         if hydroserver_url != "None":
-            request_url = f"{hydroserver_url}/manage/databases"
+            request_url = f"{hydroserver_url}/manage/network/{resource_id}/databases/"
             response = requests.get(request_url)
             try:
                 database_list = json.loads(response.content)
@@ -96,8 +97,6 @@ def get_hydroshare_layers(request):
                 database_list = []
 
             for database in database_list:
-                print("*************")
-                print(database)
                 database_id = database["database_id"]
                 if request_layer_id != "" and request_layer_id != f"{resource_id}:{database_id}":
                     continue
@@ -106,7 +105,6 @@ def get_hydroshare_layers(request):
                 request_url = f"{hydroserver_url}/refts/catalog/?network_id={resource_id}&database_id={database_id}"
                 response = requests.get(request_url)
                 refts_object = json.loads(response.content)
-                print(refts_object)
                 geojson_object = {
                     "type": "FeatureCollection",
                     "features": [
