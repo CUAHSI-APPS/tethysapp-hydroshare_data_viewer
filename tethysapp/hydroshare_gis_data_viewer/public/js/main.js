@@ -1158,7 +1158,7 @@
                             },
                             axisX: {},
                             axisY: {
-                                title: response['results']['variable_name'],
+                                title: response['results']['variable_name'] + ' (' + response['results']['unit_name'] + ')',
                             },
                             data: [{
                                 type:'line',

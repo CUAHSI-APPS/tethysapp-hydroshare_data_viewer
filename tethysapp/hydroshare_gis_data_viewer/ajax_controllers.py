@@ -410,6 +410,10 @@ def get_timeseries_data(request):
     response = requests.get(request_url, params=params)
     waterml = etree.fromstring(response.content)
     no_data_value = waterml.find("{http://www.cuahsi.org/waterML/1.1/}timeSeries").find("{http://www.cuahsi.org/waterML/1.1/}variable").find("{http://www.cuahsi.org/waterML/1.1/}noDataValue").text
+    try:
+        unit_name = waterml.find("{http://www.cuahsi.org/waterML/1.1/}timeSeries").find("{http://www.cuahsi.org/waterML/1.1/}variable").find("{http://www.cuahsi.org/waterML/1.1/}unit").find("{http://www.cuahsi.org/waterML/1.1/}unitAbbreviation").text
+    except:
+        unit_name = None
     timeseries_data = [[
         x.get('dateTime'),
         x.text if x.text != no_data_value else None
@@ -424,5 +428,6 @@ def get_timeseries_data(request):
     return_obj["results"]["no_data_value"] = no_data_value
     return_obj["results"]["site_name"] = site_name
     return_obj["results"]["variable_name"] = variable_name
+    return_obj["results"]["unit_name"] = unit_name
 
     return JsonResponse(return_obj)  
