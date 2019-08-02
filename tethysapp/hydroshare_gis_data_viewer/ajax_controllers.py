@@ -42,8 +42,8 @@ def get_hydroshare_layers(request):
 
     geoserver_url = app.get_custom_setting("geoserver_url")
     hydroserver_url = app.get_custom_setting("hydroserver_url")
+
     layer_list = {}
-    print(resource_id_list)
     for resource_id in resource_id_list:
 
         if geoserver_url != "None":
@@ -52,10 +52,14 @@ def get_hydroshare_layers(request):
             request_url = f"{geoserver_url}/wms?service=WMS&request=GetCapabilities&version=1.3.0&namespace=HS-{resource_id}"
             response = requests.get(request_url)
             root = etree.fromstring(response.content)
+            if request_type == "initial":
+                request_layer_id_gs = "HS-" + request_layer_id
+            else:
+                request_layer_id_gs = request_layer_id
 
             for layer in list(root.iter("{http://www.opengis.net/wms}Layer"))[1:]:
                 layer_id = layer.find("{http://www.opengis.net/wms}Name").text
-                if request_layer_id != "" and request_layer_id != layer_id:
+                if request_layer_id_gs != "" and request_layer_id_gs != layer_id:
                     continue
                 layer_code = get_layer_code()
                 layer_name = ":".join(layer_id.split(":")[1:])

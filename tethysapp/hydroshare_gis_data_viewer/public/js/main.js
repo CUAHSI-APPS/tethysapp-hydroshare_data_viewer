@@ -25,6 +25,14 @@
         // Gets URL query parameters.
         var urlParams = new URLSearchParams(window.location.search);
         var resList = [...new Set(urlParams.getAll('res_id'))];
+        var aggList = [...new Set(urlParams.getAll('agg_id'))];
+        if (resList.length > 1) {
+            var layerId = null;
+        } else if (aggList.length >= 1) {
+            var layerId = resList[0] + ':' + aggList[0]
+        } else {
+            var layerId = null;
+        };
 
         // Initializes map div.
         map = new ol.Map({
@@ -111,6 +119,9 @@
 
         // Initializes Discover Table
         discoverTable = $('#discover-table').DataTable({
+            'select': {
+                'style': 'single'
+            },
             'searching': true,
             'paging': false, 
             'info': false,
@@ -121,6 +132,9 @@
                 $(row).addClass('discover-table-row');
             }
         });
+
+        discoverTable.on('select', updateResourceViewer);
+        //discoverTable.on('deselect', disableDataViewer);
 
         // Adds Base Map to Layer List
         var layerCode = '0000000000'
@@ -161,7 +175,7 @@
         };
 
         // Adds HydroShare resource layers to map.
-        getHydroShareLayers(resList, null, 'initial');
+        getHydroShareLayers(resList, layerId, 'initial');
 
         // Gets list of available layers.
         getDiscoveryLayerList();
@@ -751,6 +765,10 @@
         return layerIcon;
     };
 
+    function updateResourceViewer(e, dt, type, indexes) {
+        console.log(discoverTable.rows(indexes).data().toArray())
+    };
+
     /* Updates data viewer for currently selected layer */
     function updateDataViewer(e, dt, type, indexes) {
 
@@ -777,6 +795,7 @@
         $('.action-btn').addClass('hidden');
         $('.data-viewer-tab').addClass('hidden');
         $('#layer-options-tab').removeClass('hidden');
+        $('#resource-info-tab').removeClass('hidden');
 
         if (layerList[layerCode]['layerVisible'] === true) {
             $('#hide-layer-btn').removeClass('hidden');
