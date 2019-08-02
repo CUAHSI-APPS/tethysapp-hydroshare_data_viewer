@@ -52,7 +52,7 @@ def get_hydroshare_layers(request):
             request_url = f"{geoserver_url}/wms?service=WMS&request=GetCapabilities&version=1.3.0&namespace=HS-{resource_id}"
             response = requests.get(request_url)
             root = etree.fromstring(response.content)
-            if request_type == "initial":
+            if request_layer_id[:3] != "HS-" and request_layer_id != "":
                 request_layer_id_gs = "HS-" + request_layer_id
             else:
                 request_layer_id_gs = request_layer_id
