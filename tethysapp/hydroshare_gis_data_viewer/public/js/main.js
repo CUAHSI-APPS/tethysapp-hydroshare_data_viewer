@@ -119,9 +119,9 @@
 
         // Initializes Discover Table
         discoverTable = $('#discover-table').DataTable({
-            'select': {
+            /*'select': {
                 'style': 'single'
-            },
+            },*/
             'searching': true,
             'paging': false, 
             'info': false,
@@ -179,6 +179,9 @@
 
         // Gets list of available layers.
         getDiscoveryLayerList();
+
+        // 
+        updateMapSize();
     };
 
     /* Gets layers to add to map */
@@ -609,8 +612,14 @@
 
     /* Updates the map size when the window is resized */
     function updateMapSize() {
-        var timeout = 150;
-        setTimeout(function() {map.updateSize();}, timeout);
+        var timeout = 200;
+        setTimeout(function() {
+            map.updateSize();
+            try {
+                timeseriesPlot.render();
+                timeseriesPlot.update();
+            } catch(e) {};
+        }, timeout);
     };
 
     /* Zooms to extent of layer group */
@@ -766,6 +775,7 @@
     };
 
     function updateResourceViewer(e, dt, type, indexes) {
+
         console.log(discoverTable.rows(indexes).data().toArray())
     };
 
@@ -802,6 +812,11 @@
         } else {
             $('#show-layer-btn').removeClass('hidden');
         };
+
+        try {
+            $('#ts-plot-tab').addClass('ts-plot-disabled');
+            timeseriesPlot.destory();
+        } catch(e) {};
 
         switch(layerType) {
             case 'timeseries':
@@ -1189,9 +1204,7 @@
                         });
                         $('#plot-loading').addClass('hidden');
                         $('#plot').removeClass('hidden');
-                        timeseriesPlot.render();
-                        timeseriesPlot.update();
-                        console.log(timeseriesData)
+                        updateMapSize();
                     } else {
                         console.log('Layer Load Failed');
                     };
