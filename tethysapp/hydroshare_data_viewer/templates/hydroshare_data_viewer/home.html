@@ -1,0 +1,431 @@
+{% extends "hydroshare_data_viewer/base.html" %}
+{% load tethys_gizmos %}
+{% load staticfiles %}
+
+{% block header_buttons %}
+  <div class="header-button glyphicon-button" data-toggle="tooltip" data-placement="bottom" title="Help">
+    <a data-toggle="modal" data-target="#help-modal"><span class="glyphicon glyphicon-question-sign"></span></a>
+  </div>
+{% endblock %}
+
+{% block app_navigation_items %}
+  <div id="nav-container">
+    <div id="nav-tab-button-container">
+      <button id="discover-tab-button" class="nav-tab-button">Discover</button>
+      <button id="workspace-tab-button" class="nav-tab-button">Workspace</button>
+    </div>
+    <div id="workspace-section-header" class="nav-section-header workspace-content">
+      <h5>Layers</h5>
+    </div>
+    <div id="workspace-table-container" class="workspace-content">
+      <div class="workspace-loading-container">
+        <img class="main-loading-animation" src="/static/hydroshare_data_viewer/images/grid.svg">
+      </div>
+      <table id="workspace-table" class="display"></table>
+    </div>
+    <div id="discover-section-header" class="nav-section-header discover-content">
+      <div id="discover-input-container">
+        <input id="discover-input" type="text" placeholder="Find Resources...">
+        <div id="discover-button-container" class="hidden">
+          <span id="discover-button" class="glyphicon glyphicon-filter"></span>
+        </div>
+      </div>
+    </div>
+    <div id="discover-table-container" class="nav-table-container discover-content">
+      <div class="discover-loading-container">
+        <img class="main-loading-animation" src="/static/hydroshare_data_viewer/images/grid.svg">
+      </div>
+      <table id="discover-table" class="display nav-table"></table>
+    </div>
+    <div id="discover-section-footer" class="nav-section-footer discover-content">
+      
+    </div>
+  </div>
+{% endblock %}
+
+{% block app_content %}
+  <div id="map" class="map">
+    <div class="ol-layer-switcher ol-control dropdown">
+      <button class="dropdown-toggle" type="button" title="Show Me" data-toggle="dropdown">
+        <span class="glyphicon glyphicon-globe"></span>
+      </button>
+      <div id="basemap-menu" class="dropdown-menu">
+        <div>
+          <input type="radio" id="satellite-select" class="basemap-radio" name="basemap" value="satellite" checked>
+          <label class="basemap-label" for="satellite">Satellite</label>
+        </div>
+        <div>
+          <input type="radio" id="street-select" class="basemap-radio" name="basemap" value="street">
+          <label class="basemap-label" for="street">Street</label>
+        </div>
+        <div>
+          <input type="radio" id="grey-select" class="basemap-radio" name="basemap" value="grey">
+          <label class="basemap-label" for="grey">Grey</label>
+        </div>
+        <div>
+          <input type="radio" id="dark-select" class="basemap-radio" name="basemap" value="dark">
+          <label class="basemap-label" for="dark">Dark</label>
+        </div>
+        <div>
+          <input type="radio" id="none-select" class="basemap-radio" name="basemap" value="none">
+          <label class="basemap-label" for="none">None</label>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div>
+          <input type="checkbox" id="labels-select" class="basemap-radio" name="basemap" value="labels" checked>
+          <label class="basemap-label" for="labels">Reference</label>
+        </div>
+        <div>
+          <input type="checkbox" id="overview-map-select" class="basemap-radio" name="basemap" value="labels">
+          <label class="basemap-label" for="labels">Overview Map</label>
+        </div>
+        <div>
+          <input type="checkbox" id="terrain-select" class="basemap-radio" name="basemap" value="terrain">
+          <label class="basemap-label" for="terrain">Terrain</label>
+        </div>
+      </div>
+   </div>
+  </div>
+  <div id="data-viewer-container">
+    <div id="data-viewer-header">
+      <div id="data-viewer-show" class="data-viewer-toggle hidden"  data-toggle="tooltip" data-placement="left" title="Expand">
+        <a><span class="glyphicon glyphicon-chevron-up"></span></a>
+      </div>
+      <div id="data-viewer-hide" class="data-viewer-toggle hidden"  data-toggle="tooltip" data-placement="left" title="Collapse">
+        <a><span class="glyphicon glyphicon-chevron-down"></span></a>
+      </div>
+      <div id="data-viewer-tabs" class="hidden">
+        <div id="resource-info" class="data-viewer-tab active-tab"> 
+          Resource Info
+        </div>
+        <div id="layer-options" class="data-viewer-tab">
+          Layer Options
+        </div>
+        <div id="attr-table" class="data-viewer-tab"> 
+          Attribute Table
+        </div>
+        <div id="ts-plot" class="data-viewer-tab disabled-tab">
+          Time Series Plot
+        </div>
+      </div>
+    </div>
+    <div class="data-viewer-content hidden">
+      <div id="resource-info-view" class="data-viewer-page">
+        <div class="data-view-loading-container">
+          <img class="main-loading-animation" src="/static/hydroshare_data_viewer/images/grid.svg">
+        </div>
+        <div id="resource-metadata-container" class="resource-info-container">
+          <div id="resource-title" class="resource-info-label">Resource Title</div>
+          <div id="resource-metadata-content" class="resource-info-content">
+            <div class="resource-metadata">
+              <div class="resource-metadata-label">Creator:</div>
+              <div id="resource-creator" class="resource-metadata-value"></div>
+            </div>
+            <div class="resource-metadata">
+              <div class="resource-metadata-label">Date Created:</div>
+              <div id="resource-date-created" class="resource-metadata-value"></div>
+            </div>
+            <div class="resource-metadata">
+              <div class="resource-metadata-label">Last Updated:</div>
+              <div id="resource-last-updated" class="resource-metadata-value"></div>
+            </div>
+            <div class="resource-metadata">
+              <div class="resource-metadata-label">Resource Type:</div>
+              <div id="resource-type" class="resource-metadata-value"></div>
+            </div>
+            <div class="resource-metadata">
+              <div class="resource-metadata-label">Resource Link:</div>
+              <a id="resource-link" target="_blank" href="" class="resource-metadata-value"></a>
+            </div>
+            <div class="resource-metadata">
+              <div class="resource-metadata-label">Sharing Status:</div>
+              <div id="resource-sharing-status" class="resource-metadata-value"></div>
+            </div>
+            <div class="resource-metadata">
+              <div class="resource-metadata-label">Resource ID:</div>
+              <div id="resource-id" class="resource-metadata-value"></div>
+            </div>
+          </div>
+        </div>
+        <div id="resource-abstract-container" class="resource-info-container">
+          <div id="resource-abstract-label" class="resource-info-label">Resource Abstract</div>
+          <div id="resource-abstract-content" class="resource-info-content">
+            <div id="resource-abstract"></div>
+          </div>
+        </div>
+        <div id="resource-aggregation-container" class="resource-info-container">
+          <div id="resource-aggregations-label" class="resource-info-label">Resource Aggregations</div>
+          <div id="resource-aggregations-content" class="resource-info-content">
+            <div id="aggregation-no-data">No Layers Found</div>
+            <div id="resource-aggregation-list"></div>
+          </div>
+        </div>
+      </div>
+      <div id="layer-options-view" class="data-viewer-page">
+        <div id="layer-actions-container" class="layer-options-container">
+          <div id="layer-actions-label" class="layer-options-label">Actions</div>
+          <div id="layer-actions-content" class="layer-options-content">
+            <button id="rename-layer-btn" type="button" class="action-btn btn btn-default" data-toggle="modal" data-target="#edit-layer-name-modal">Rename Layer</button>
+            <button id="show-layer-btn" type="button" class="action-btn btn btn-default hidden">Show Layer</button>
+            <button id="hide-layer-btn" type="button" class="action-btn btn btn-default">Hide Layer</button>
+            <button id="zoom-to-layer-btn" type="button" class="action-btn btn btn-default">Zoom to Layer</button>
+            <button disabled id="download-data-btn" type="button" class="action-btn btn btn-default hidden">Download Data</button>
+            <button id="remove-layer-btn" type="button" class="action-btn btn btn-danger" data-toggle="modal" data-target="#remove-layer-modal">Remove Layer</button>
+          </div>
+        </div>
+        <div id="layer-fill-container" class="layer-options-container">
+          <div id="layer-fill-label" class="layer-options-label">Fill</div>
+          <div id="layer-fill-content" class="layer-options-content">
+            <div id="fill-type-option-container" class="layer-option-container">
+              <div class="layer-option-label">Type:</div>
+              <div id="fill-type-container" class="layer-option-value">
+                <select id="fill-type-input" class="symbology-input"></select>
+              </div>
+            </div>
+            <div id="fill-field-option-container" class="layer-option-container">
+              <div class="layer-option-label">Field:</div>
+              <div id="fill-field-container" class="layer-option-value">
+                <select id="fill-field-input" class="symbology-input"></select>
+              </div>
+            </div>
+            <div id="fill-color-option-container" class="layer-option-container">
+              <div class="layer-option-label">Color:</div>
+              <div id="fill-color-container" class="layer-option-value">
+                <input id="fill-color-selector" comp="fill" type="text" class="color-selector"/>
+              </div>
+            </div>
+            <div id="fill-gradient-option-container" class="layer-option-container">
+              <div class="layer-option-label">Gradient:</div>
+              <div id="fill-gradient-container" class="layer-option-value">
+                <select id="fill-gradient-input" class="layer-option-select symbology-input">
+                  <option value="gray">Gray</option>
+                  <option value="rainbow">Rainbow</option>
+                  <option value="electric">Electric</option>
+                  <option value="bone">Bone</option>
+                  <option value="blackbody">Blackbody</option>
+                  <option value="viridis">Viridis</option>
+                  <option value="jet">Jet</option>  
+                  <option value="hot">Hot</option>
+                  <option value="cool">Cool</option>
+                  <option value="magma">Magma</option>
+                  <option value="plasma">Plasma</option>   
+                  <option value="spring">Spring</option>
+                  <option value="summer">Summer</option>
+                  <option value="autumn">Autumn</option>
+                  <option value="winter">Winter</option>
+                </select>
+              </div>
+            </div>
+            <div id="fill-opacity-option-container" class="layer-option-container">
+              <div class="layer-option-label">Opacity:</div>
+              <div id="fill-opacity-container" class="layer-option-value">
+                <input type="range" id="fill-opacity-input" class="symbology-slider" value="1" min="0" max="1" step="0.01">
+              </div>
+            </div>
+            <div id="fill-size-option-container" class="layer-option-container">
+              <div class="layer-option-label">Size:</div>
+              <div id="fill-size-container" class="layer-option-value">
+                <input type="range" id="fill-size-input" class="symbology-slider" value="6" min="1" max="50" step="0.5">
+              </div>
+            </div>
+            <div id="fill-shape-option-container" class="layer-option-container">
+              <div class="layer-option-label">Shape:</div>
+              <div id="fill-shape-container" class="layer-option-value">
+                <select id="fill-shape-input" class="symbology-input">
+                  <option value="circle">Circle</option>
+                  <option value="square">Square</option>
+                  <option value="triangle">Triangle</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="layer-stroke-container" class="layer-options-container">
+          <div id="layer-stroke-label" class="layer-options-label">Stroke</div>
+          <div id="layer-stroke-content" class="layer-options-content">
+            <div id="stroke-type-option-container" class="layer-option-container">
+              <div class="layer-option-label">Type:</div>
+              <div id="stroke-type-container" class="layer-option-value">
+                <select id="stroke-type-input" class="symbology-input"></select>
+              </div>
+            </div>
+            <div id="stroke-field-option-container" class="layer-option-container">
+              <div class="layer-option-label">Field:</div>
+              <div id="stroke-field-container" class="layer-option-value">
+                <select id="stroke-field-input" class="symbology-input"></select>
+              </div>
+            </div>
+            <div id="stroke-gradient-option-container" class="layer-option-container">
+              <div class="layer-option-label">Gradient:</div>
+              <div id="stroke-gradient-container" class="layer-option-value">
+                <select id="stroke-gradient-input" class="layer-option-select symbology-input">
+                  <option value="gray">Gray</option>
+                  <option value="rainbow">Rainbow</option>
+                  <option value="electric">Electric</option>
+                  <option value="bone">Bone</option>
+                  <option value="blackbody">Blackbody</option>
+                  <option value="viridis">Viridis</option>
+                  <option value="jet">Jet</option>  
+                  <option value="hot">Hot</option>
+                  <option value="cool">Cool</option>
+                  <option value="magma">Magma</option>
+                  <option value="plasma">Plasma</option>   
+                  <option value="spring">Spring</option>
+                  <option value="summer">Summer</option>
+                  <option value="autumn">Autumn</option>
+                  <option value="winter">Winter</option>
+                </select>
+              </div>
+            </div>
+            <div id="stroke-color-option-container" class="layer-option-container">
+              <div class="layer-option-label">Color:</div>
+              <div id="stroke-color-container" class="layer-option-value">
+                <input id="stroke-color-selector" comp="stroke" type="text" class="color-selector"/>
+              </div>
+            </div>
+            <div id="stroke-opacity-option-container" class="layer-option-container">
+              <div class="layer-option-label">Opacity:</div>
+              <div id="stroke-opacity-container" class="layer-option-value">
+                <input type="range" id="stroke-opacity-input" class="symbology-slider" value="1" min="0" max="1" step="0.01">
+              </div>
+            </div>
+            <div id="stroke-size-option-container" class="layer-option-container">
+              <div class="layer-option-label">Size:</div>
+              <div id="stroke-size-container" class="layer-option-value">
+                <input type="range" id="stroke-size-input" class="symbology-slider" value="6" min="0.2" max="12" step="0.2">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="layer-labels-container" class="layer-options-container">
+          <div id="layer-labels-label" class="layer-options-label">Labels</div>
+          <div id="layer-labels-content" class="layer-options-content">
+            <div id="label-field-option-container" class="layer-option-container">
+              <div class="layer-option-label">Field:</div>
+              <div id="label-field-container" class="layer-option-value">
+                <select id="label-field-input" class="symbology-input"></select>
+              </div>
+            </div>
+            <div id="label-color-option-container" class="layer-option-container">
+              <div class="layer-option-label">Color:</div>
+              <div id="label-color-container" class="layer-option-value">
+                <input id="label-color-selector" comp="label" type="text" class="color-selector"/>
+              </div>
+            </div>
+            <div id="label-opacity-option-container" class="layer-option-container">
+              <div class="layer-option-label">Opacity:</div>
+              <div id="label-opacity-container" class="layer-option-value">
+                <input type="range" id="label-opacity-input" class="symbology-slider" value="1" min="0" max="1" step="0.01">
+              </div>
+            </div>
+            <div id="label-size-option-container" class="layer-option-container">
+              <div class="layer-option-label">Size:</div>
+              <div id="label-size-container" class="layer-option-value">
+                <input type="range" id="label-size-input" class="symbology-slider" value="6" min="6" max="24" step="0.1">
+              </div>
+            </div>
+            <div id="label-font-option-container" class="layer-option-container">
+              <div class="layer-option-label">Font:</div>
+              <div id="label-font-container" class="layer-option-value">
+                <select id="label-font-input" class="symbology-input">
+                  <option value="SansSerif">Arial</option>
+                  <option value="Serif">Times New Roman</option>
+                  <option value="Monospaced">Monospaced</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="attr-table-view" class="data-viewer-page">
+        <div id="attr-table-container"></div>
+      </div>
+      <div id="ts-plot-view" class="data-viewer-page">
+        <div id="plot-loading" class="main-loading-container"><img class="main-loading-animation" src="/static/hydroshare_data_viewer/images/grid.svg"></div>
+        <div id="plot-container">
+          <div id="plot"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="config-data" class="hidden">
+    <div id=resource_id>{{resource_id}}</div>
+    <div id=aggregation_id>{{aggregation_id}}</div>
+    <div id=geoserver_url>{{geoserver_url}}</div>
+    <div id=hydroserver_url>{{hydroserver_url}}</div>
+    <div id=max_layers>{{max_layers}}</div>
+  </div>
+{% endblock %}
+
+{# Use the after_app_content block for modals #}
+{% block after_app_content %}
+
+  <!-- Help Modal -->
+  <div class="modal fade" id="help-modal" tabindex="-1" role="dialog" aria-labelledby="help-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title" id="help-modal-label">Using the HydroShare GIS Data Viewer</h5>
+        </div>
+        <div class="modal-body">
+          <p>This app uses OGC Web Services to help you visualize geospatial data stored on HydroShare. Public geographic feature and geographic raster data are currently supported.</p>
+          <p>The leftside pane of the app contains a list of layers, including the basemap. These layers can be reordered by clicking on the double sided arrow and dragging it up or down. This pane also acts a legend with the icons representing the layer type and styling. You can click on a layer to activate it.</p>
+          <p>When you click on a layer to activate it, a bottom pane appears with additional options and information. All layers have a variety of styling options that you can edit. Geographic feature layers also have an attribute table available in this pane. This attribute table may not be available for very large layers.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Layer Name -->
+  <div class="modal fade" id="edit-layer-name-modal" tabindex="-1" role="dialog" aria-labelledby="edit-layer-name-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title">Edit Layer Name</h5>
+        </div>
+        <div class="modal-body">
+          <h8>Create a new name for this layer.</h8>
+          <br><br>
+          <input id="layer-name-input" type="text">
+          <br><br>
+          <h8>Note: This will not affect the HydroShare resource.</h8>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button id="edit-layer-name-confirm-btn" type="button" class="btn btn-default" data-dismiss="modal">Rename Layer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove Layer Confirmation -->
+  <div class="modal fade" id="remove-layer-modal" tabindex="-1" role="dialog" aria-labelledby="remove-layer-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title">Confirm Layer Removal</h5>
+        </div>
+        <div class="modal-body">
+          <h8>Are you sure you want to remove this layer from the map?</h8> 
+          <br><br>
+          <h8>Note: This will not affect the HydroShare resource.</h8>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button id="remove-layer-confirm-btn" type="button" class="btn btn-danger" data-dismiss="modal">Remove Layer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block app_actions %}
+{% endblock %}
