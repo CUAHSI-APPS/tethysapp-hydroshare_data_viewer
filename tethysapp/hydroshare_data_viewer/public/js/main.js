@@ -800,6 +800,7 @@
 
         // Checks layer count
         if (workspaceTable.rows().count() >= parseInt($('#max_layers').text())) {
+            alert('Cannot add ' + layerData['layerName'] + '.\n\nMaximum layer count of ' + $('#max_layers').text() + ' layers has been reached. Please remove layers from the workspace to add others.');
             return false;
         };
 
