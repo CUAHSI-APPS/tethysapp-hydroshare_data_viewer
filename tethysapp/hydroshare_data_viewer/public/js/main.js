@@ -386,14 +386,15 @@
     function selectFeature() {
         var attributeRowSelected = attributeTable.rows({selected: true}).data();
         if (attributeRowSelected[0] != null) {
-            if (selectedLayer['feature'] != attributeRowSelected[0][0]) {
-                selectedLayer['feature'] = attributeRowSelected[0][0];
+            if (selectedLayer['fid'] != attributeRowSelected[0][0]) {
+                selectedLayer['fid'] = attributeRowSelected[0][0];
+                selectedLayer['feature'] = attributeRowSelected[0][1];
                 var fields = []
                 for (var i = 0; i < layerList[activeLayer]['layerFields'].length; i++) {
                     fields.push(layerList[activeLayer]['layerFields'][i]['fieldName'])
                 };
                 selectedLayer['fields'] = fields;
-                selectedLayer['row'] = attributeRowSelected[0].slice(1);
+                selectedLayer['row'] = attributeRowSelected[0].slice(2);
                 if (layerList[activeLayer]['layerType'] === 'timeseries') {
                     buildPlot();
                 };
@@ -909,6 +910,18 @@
         if (layerData['layerSymbology']['labelField'] === 'none') {
             var labelRule = '';
         } else {
+            if (layerData['layerType'] === 'point' || layerData['layerType'] === 'timeseries') {
+                var displacement = '<LabelPlacement>' +
+                    '<PointPlacement>' +
+                        '<Displacement>' +
+                            '<DisplacementY>0</DisplacementY>' +
+                            '<DisplacementX>' + (parseFloat(layerData['layerSymbology']['fillSize'])/2 + parseFloat(layerData['layerSymbology']['strokeSize'])/2 + 3).toString() + '</DisplacementX>' +
+                        '</Displacement>' +
+                    '</PointPlacement>' +
+                '</LabelPlacement>';
+            } else {
+                var displacement = '';
+            };
             var labelRule = '<FeatureTypeStyle>' +
                 '<Rule>' +
                     '<TextSymbolizer>' +
@@ -925,29 +938,14 @@
                             '<CssParameter name="fill">' + layerData['layerSymbology']['labelColor'] + '</CssParameter>' +
                             '<CssParameter name="fill-opacity">' + layerData['layerSymbology']['labelOpacity'] + '</CssParameter>' +
                         '</Fill>' +
-                        '<LabelPlacement>' +
-                            '<PointPlacement>' +
-                                '<Displacement>' +
-                                    '<DisplacementY>0</DisplacementY>' +
-                                    '<DisplacementX>' + '0' + '</DisplacementX>' +
-                                '</Displacement>' +
-                            '</PointPlacement>' +
-                        '</LabelPlacement>' +
+                        displacement +
                     '</TextSymbolizer>' +
                 '</Rule>' +
             '</FeatureTypeStyle>';
         };
 
-        if (selectedLayer['fields'] != null) {
-            var filters = '';
-            for (var i = 0; i < selectedLayer['fields'].length; i++) {
-                if (selectedLayer['row'][i] != null && selectedLayer['row'][i] != '') {
-                    filters = filters + '<ogc:PropertyIsEqualTo>' +
-                        '<ogc:PropertyName>' + selectedLayer['fields'][i] + '</ogc:PropertyName>' +
-                        '<ogc:Literal>' + selectedLayer['row'][i].toString().replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&apos;') + '</ogc:Literal>' +
-                    '</ogc:PropertyIsEqualTo>';
-                };
-            };
+        if (selectedLayer['feature'] != null) {
+            var filters = '<ogc:FeatureId fid="' + selectedLayer['fid'].toString() + '"/>';
         } else {
             var filters = null;
         };
@@ -959,9 +957,7 @@
                     var filterRule = '<FeatureTypeStyle>' +
                         '<Rule>' +
                             '<ogc:Filter>' +
-                                '<ogc:And>' +
-                                    filters + 
-                                '</ogc:And>' +
+                                filters + 
                             '</ogc:Filter>' +
                             '<PointSymbolizer>' +
                                 '<Graphic>' +
@@ -969,6 +965,14 @@
                                         '<WellKnownName>' +
                                             layerData['layerSymbology']['fillShape'] +
                                         '</WellKnownName>' +
+                                        '<Fill>' +
+                                            '<CssParameter name="fill">' +
+                                                layerData['layerSymbology']['fillColor'] +
+                                            '</CssParameter>' +
+                                            '<CssParameter name="fill-opacity">' +
+                                                layerData['layerSymbology']['fillOpacity'] +
+                                            '</CssParameter>' +
+                                        '</Fill>' +
                                         '<Stroke>' +
                                             '<CssParameter name="stroke">' +
                                                 '#42E9F5' +
@@ -1092,9 +1096,7 @@
                     var filterRule = '<FeatureTypeStyle>' +
                         '<Rule>' +
                             '<ogc:Filter>' +
-                                '<ogc:And>' +
-                                    filters + 
-                                '</ogc:And>' +
+                                filters + 
                             '</ogc:Filter>' +
                             '<LineSymbolizer>' +
                                 '<Stroke>' +
@@ -1179,9 +1181,7 @@
                     var filterRule = '<FeatureTypeStyle>' +
                         '<Rule>' +
                             '<ogc:Filter>' +
-                                '<ogc:And>' +
-                                    filters + 
-                                '</ogc:And>' +
+                                filters + 
                             '</ogc:Filter>' +
                             '<PolygonSymbolizer>' +
                                 '<Stroke>' +
@@ -1836,6 +1836,7 @@
         // Setup table columns
         $('#attr-table-container').append('<table id="attribute-table" class="display"></table>');
         $('#attribute-table').append("<thead><tr></tr></thead>");
+        $('#attribute-table>thead>tr').append('<th>GS_FID</th>');
         $('#attribute-table>thead>tr').append('<th>Feature</th>');
         var layerFields = [];
         for (var i = 0; i < layerList[activeLayer]['layerFields'].length; i++) {
@@ -1877,11 +1878,14 @@
                 'displayBuffer': 20,
                 'rowHeight': 37
             },
+            'columnDefs': [
+                {'visible': false, 'targets': [0]},
+            ],
             'drawCallback': function() {
                 attributeTable.rows().eq(0).each(function(index){
                     var row = attributeTable.row(index);
                     var data = row.data();
-                    if (data[0] === selectedLayer['feature']) {
+                    if (data[0] === selectedLayer['fid']) {
                         row.select();
                     };
                 });

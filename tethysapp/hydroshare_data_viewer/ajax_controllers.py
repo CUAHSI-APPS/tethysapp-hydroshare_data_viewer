@@ -264,7 +264,7 @@ def update_attribute_table(request):
         "count": length
     }
     response = requests.get(request_url, params=request_params)
-    data = [[i + start + 1] + list(field["properties"].values()) for i, field in enumerate(json.loads(response.content)["features"])]
+    data = [[field["id"]] + [i + start + 1] + list(field["properties"].values()) for i, field in enumerate(json.loads(response.content)["features"])]
 
     # -------------------- #
     #   RETURNS RESPONSE   #
