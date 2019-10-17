@@ -29,12 +29,13 @@
     font-family: "Open Sans";
     height: 100% !important;
     padding-bottom: 0 !important;
+    pointer-events: none !important;
+    z-index: 1;
 }
 
 #inner-app-content {
+    overflow: hidden !important;
     padding: 0 !important;
-    display: flex;
-    flex-flow: column;
 }
 
 #app-actions {
@@ -44,11 +45,22 @@
 #map {
     min-height: 0;
     flex: 1;
+    top: 50px;
+    bottom: 50px;
+    left: 0;
+    right: 0;
+    position: absolute;
+    z-index: 0;
 }
 
 .ol-scale-line {
     left: unset;
     right: 8px;
+    transition: margin-bottom 0.2s;
+}
+
+.ol-scale-line-up {
+    margin-bottom: 250px;
 }
 
 .ol-overviewmap {
@@ -60,6 +72,17 @@
     left: 8px !important;
     bottom: 8px !important;
     pointer-events: none !important;
+    margin-bottom: 0;
+    margin-left: 0;
+    transition: margin 0.2s;
+}
+
+.ol-overviewmap-up {
+    margin-bottom: 250px;
+}
+
+.ol-overviewmap-right {
+    margin-left: 300px;
 }
 
 .ol-overviewmap-map {
@@ -72,8 +95,34 @@
 
 .ol-layer-switcher {
     z-index: 1000;
-    top: 8em;
+    top: 4.5em;
     left: .5em;
+    margin-left: 0;
+    transition: margin-left 0.2s;
+}
+
+.ol-layer-switcher-right {
+    margin-left: 300px;
+}
+
+.ol-zoom {
+    margin-left: 0;
+    transition: margin-left 0.2s;
+}
+
+.ol-zoom-right {
+    margin-left: 300px;
+}
+
+.ol-layer-switcher-touch {
+    height: 35px;
+    width: 35px;
+    top: 5.5em;
+}
+
+.ol-layer-switcher-button-touch {
+    height: 29px !important;
+    width: 29px !important;
 }
 
 .basemap-radio {
@@ -96,6 +145,7 @@
     padding-left: 0 !important;
     padding-right: 0 !important;
     border-right: 1px solid gray !important;
+    pointer-events: auto;
 }
 
 .nav {
@@ -174,6 +224,7 @@
     width: 299px;
     flex-grow: 1;
     overflow-y: scroll;
+    overflow-x: hidden;
 }
 
 #workspace-table {
@@ -333,13 +384,34 @@
 /* ::::::::::::::::::::::::: Data View :::::::::::::::::::::::::: */
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 
-#data-viewer-header {
+.data-viewer-container {
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    overflow: hidden;
+    height: 50px;
+    pointer-events: auto;
+    transition: height 0.2s;
+}
+
+.data-viewer-container-expanded {
+    height: 300px;
+}
+
+.data-viewer-header {
+    padding-right: 0;
     display: flex;
     flex-direction: row-reverse;
     height: 50px;
     width: 100%;
     border-top: 1px solid #008080;
     background-color: #008080;
+    transition: padding-right 0.2s;
+
+}
+
+.data-viewer-header-right {
+    padding-right: 300px;
 }
 
 #data-viewer-tabs {
@@ -347,7 +419,6 @@
     flex-grow: 1;
     flex-direction: row;
     height: 100%;
-    overflow-x: scroll;
 }
 
 .data-viewer-tab {
@@ -408,9 +479,15 @@
 }
 
 .data-viewer-content {
+    transition: padding-right 0.2s;
+    padding-right: 0;
     height: 250px;
     width: 100%;
     background-color: white;
+}
+
+.data-viewer-content-right {
+    padding-right: 300px;
 }
 
 .data-viewer-page {
@@ -519,7 +596,6 @@
 }
 
 #resource-aggregation-list {
-    overflow-y: scroll;
     padding-right: 4px;
     padding-left: 4px;
     width: 100%;
@@ -662,6 +738,10 @@
 
 .dataTables_scrollHead {
     background-color: white;
+}
+
+#attribute-table {
+    width: 100% !important;
 }
 
 #attribute-table td {

@@ -44,50 +44,8 @@
 {% endblock %}
 
 {% block app_content %}
-  <div id="map" class="map">
-    <div class="ol-layer-switcher ol-control dropdown">
-      <button class="dropdown-toggle" type="button" title="Show Me" data-toggle="dropdown">
-        <span class="glyphicon glyphicon-globe"></span>
-      </button>
-      <div id="basemap-menu" class="dropdown-menu">
-        <div>
-          <input type="radio" id="satellite-select" class="basemap-radio" name="basemap" value="satellite" checked>
-          <label class="basemap-label" for="satellite">Satellite</label>
-        </div>
-        <div>
-          <input type="radio" id="street-select" class="basemap-radio" name="basemap" value="street">
-          <label class="basemap-label" for="street">Street</label>
-        </div>
-        <div>
-          <input type="radio" id="grey-select" class="basemap-radio" name="basemap" value="grey">
-          <label class="basemap-label" for="grey">Grey</label>
-        </div>
-        <div>
-          <input type="radio" id="dark-select" class="basemap-radio" name="basemap" value="dark">
-          <label class="basemap-label" for="dark">Dark</label>
-        </div>
-        <div>
-          <input type="radio" id="none-select" class="basemap-radio" name="basemap" value="none">
-          <label class="basemap-label" for="none">None</label>
-        </div>
-        <div class="dropdown-divider"></div>
-        <div>
-          <input type="checkbox" id="labels-select" class="basemap-radio" name="basemap" value="labels" checked>
-          <label class="basemap-label" for="labels">Reference</label>
-        </div>
-        <div>
-          <input type="checkbox" id="overview-map-select" class="basemap-radio" name="basemap" value="labels">
-          <label class="basemap-label" for="labels">Overview Map</label>
-        </div>
-        <div>
-          <input type="checkbox" id="terrain-select" class="basemap-radio" name="basemap" value="terrain">
-          <label class="basemap-label" for="terrain">Terrain</label>
-        </div>
-      </div>
-   </div>
-  </div>
-  <div id="data-viewer-container">
-    <div id="data-viewer-header">
+  <div class="data-viewer-container">
+    <div class="data-viewer-header">
       <div id="data-viewer-show" class="data-viewer-toggle hidden"  data-toggle="tooltip" data-placement="left" title="Expand">
         <a><span class="glyphicon glyphicon-chevron-up"></span></a>
       </div>
@@ -109,7 +67,7 @@
         </div>
       </div>
     </div>
-    <div class="data-viewer-content hidden">
+    <div class="data-viewer-content">
       <div id="resource-info-view" class="data-viewer-page">
         <div class="data-view-loading-container">
           <img class="main-loading-animation" src="/static/hydroshare_data_viewer/images/grid.svg">

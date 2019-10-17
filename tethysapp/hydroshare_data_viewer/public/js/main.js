@@ -20,10 +20,13 @@
     var sliderTimeout;
     var layerList = {};
     var aggregationsList = [];
+    var selectedFeature = {};
     var selectedLayer = {};
     var activeLayer = null;
     var activeResource = null;
     var activeFeature = null;
+    var dataViewerVisible = false;
+    var navigationVisible = true;
 
     /*****************************************************************************************
      ******************************** FUNCTION DECLARATIONS **********************************
@@ -56,6 +59,7 @@
         } else {
             toggleNavTabs('discover');
         };
+        toggleNavigation();
     };
 
     /* Builds discover table */
@@ -175,8 +179,70 @@
         workspaceTable.on('deselect', setActiveLayer);
     };
 
+    function toggleNavigation() {
+        if ($('#app-content-wrapper').hasClass('show-nav')) {
+            $('.ol-layer-switcher').addClass('ol-layer-switcher-right');
+            $('.ol-overviewmap').addClass('ol-overviewmap-right');
+            $('.ol-zoom').addClass('ol-zoom-right');
+            $('.data-viewer-header').addClass('data-viewer-header-right');
+            $('.data-viewer-content').addClass('data-viewer-content-right');
+            navigationVisible = true;
+        } else {
+            $('.ol-layer-switcher').removeClass('ol-layer-switcher-right');
+            $('.ol-overviewmap').removeClass('ol-overviewmap-right');
+            $('.ol-zoom').removeClass('ol-zoom-right');
+            $('.data-viewer-header').removeClass('data-viewer-header-right');
+            $('.data-viewer-content').removeClass('data-viewer-content-right');
+            navigationVisible = false;
+        };
+    };
+
     /* Builds OpenLayers map */
     function buildMap() {
+
+        // Creates map html.
+        $('#app-content-wrapper').append(`<div id="map" class="map">
+            <div class="ol-layer-switcher ol-control dropdown">
+              <button id="layer-switcher-button" class="dropdown-toggle" type="button" title="Show Me" data-toggle="dropdown">
+                <span class="glyphicon glyphicon-globe"></span>
+              </button>
+              <div id="basemap-menu" class="dropdown-menu">
+                <div>
+                  <input type="radio" id="satellite-select" class="basemap-radio" name="basemap" value="satellite" checked>
+                  <label class="basemap-label" for="satellite">Satellite</label>
+                </div>
+                <div>
+                  <input type="radio" id="street-select" class="basemap-radio" name="basemap" value="street">
+                  <label class="basemap-label" for="street">Street</label>
+                </div>
+                <div>
+                  <input type="radio" id="grey-select" class="basemap-radio" name="basemap" value="grey">
+                  <label class="basemap-label" for="grey">Grey</label>
+                </div>
+                <div>
+                  <input type="radio" id="dark-select" class="basemap-radio" name="basemap" value="dark">
+                  <label class="basemap-label" for="dark">Dark</label>
+                </div>
+                <div>
+                  <input type="radio" id="none-select" class="basemap-radio" name="basemap" value="none">
+                  <label class="basemap-label" for="none">None</label>
+                </div>
+                <div class="dropdown-divider"></div>
+                <div>
+                  <input type="checkbox" id="labels-select" class="basemap-radio" name="basemap" value="labels" checked>
+                  <label class="basemap-label" for="labels">Reference</label>
+                </div>
+                <div>
+                  <input type="checkbox" id="overview-map-select" class="basemap-radio" name="basemap" value="labels">
+                  <label class="basemap-label" for="labels">Overview Map</label>
+                </div>
+                <div>
+                  <input type="checkbox" id="terrain-select" class="basemap-radio" name="basemap" value="terrain">
+                  <label class="basemap-label" for="terrain">Terrain</label>
+                </div>
+              </div>
+            </div>
+          </div>`);
 
         // Initializes map div.
         map = new ol.Map({
@@ -189,9 +255,8 @@
             })
         });
 
-        // Adds a scale line and full screen control to the map.
+        // Adds a scale line control to the map.
         map.addControl(new ol.control.ScaleLine());
-        map.addControl(new ol.control.FullScreen());
 
         // Uses grab cursor when dragging the map.
         map.on('pointerdrag', function(evt) {
@@ -205,6 +270,24 @@
         $(document).on('click', '.dropdown-menu', function (e) {
             e.stopPropagation();
         });
+
+        // Adjusts layer switcher button
+        if ($('.ol-viewport').hasClass('ol-touch')) {
+            $('.ol-layer-switcher').addClass('ol-layer-switcher-touch');
+            $('#layer-switcher-button').addClass('ol-layer-switcher-button-touch');
+        };
+
+        // Creates overview map
+        overviewMap = new ol.control.OverviewMap({
+            collapsed: false,
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                })
+            ],
+            collapsible: false
+        });
+        map.addControl(overviewMap);
 
         // Load initial basemap.
         updateBasemap();
@@ -222,9 +305,6 @@
         };
         if (basemapTerrain) {
             map.removeLayer(basemapTerrain);
-        };
-        if (overviewMap) {
-            map.removeControl(overviewMap);
         };
 
         // Set up basemap sources.
@@ -330,19 +410,9 @@
             basemapTerrain = null;
         };
         if ($('#overview-map-select').is(':checked')) {
-            overviewMap = new ol.control.OverviewMap({
-                collapsed: false,
-                layers: [
-                    new ol.layer.Tile({
-                        source: new ol.source.OSM()
-                    })
-                ],
-                collapsible: false
-            });
-            map.addControl(overviewMap);
+            $('.ol-overviewmap').show();
         } else {
-            map.removeControl(overviewMap);
-            overviewMap = null;
+            $('.ol-overviewmap').hide();
         };
         if (basemapLabels) {
             map.addLayer(basemapLabels);
@@ -358,6 +428,9 @@
                 timeseriesPlot.render();
                 timeseriesPlot.update();
             } catch(e) {};
+            try {
+                $('#attribute-table').DataTable().ajax.reload();
+            } catch (e) {};
         }, timeout);
     };
 
@@ -377,9 +450,38 @@
     function reorderMapLayers() {
         setTimeout(() => {
             $('#workspace-table').find('tbody').find('tr').each(function(i,r){
-                layerList[$(r).attr('layer-code')]['layerSource'].setZIndex(100 - i);
+                var layerCode = $(r).attr('layer-code');
+                layerList[layerCode]['layerOrder'] = 100 - i * 2;
+                layerList[layerCode]['layerSource'].setZIndex(layerList[layerCode]['layerOrder']);
             });
+            try {
+                selectedFeature['layerSource'].setZIndex(layerList[activeLayer]['layerOrder'] + 1);
+            } catch {};
         }, 100);
+    };
+
+    /* Updates map selected feature */
+    function updateMapFeature() {
+        try {
+            map.removeLayer(selectedFeature['layerSource']);
+        } catch {};
+        if (!($.isEmptyObject(selectedLayer))) {
+            var sldBody = buildLayerStyle(layerList[activeLayer], true);
+            selectedFeature['layerWMS'] = new ol.source.ImageWMS({
+                url: 'https://geoserver-beta.hydroshare.org/geoserver/wms',
+                params: {'LAYERS': layerList[activeLayer]['layerCode'], 'SLD_BODY': sldBody},
+                serverType: 'geoserver',
+                crossOrigin: 'Anonymous'
+            });
+            selectedFeature['layerSource'] = new ol.layer.Image({
+                source: selectedFeature['layerWMS']
+            });
+            map.addLayer(selectedFeature['layerSource']);
+            selectedFeature['layerSource'].setZIndex(layerList[activeLayer]['layerOrder'] + 1);
+            selectedFeature['layerSource'].setVisible(layerList[activeLayer]['layerVisible']);
+        } else {
+            selectedFeature = {};
+        };
     };
 
     /* Sets selected feature of a layer */
@@ -398,22 +500,25 @@
                 if (layerList[activeLayer]['layerType'] === 'timeseries') {
                     buildPlot();
                 };
+                updateMapFeature();
             };
         } else {
             $('#ts-plot').addClass('disabled-tab');
             selectedLayer = {};
+            updateMapFeature();
         };
-        updateLayerSymbology(true)
     };
 
     /* Zooms to map extent */
     function zoomToExtent(minX, minY, maxX, maxY) {
         var extent = ol.extent.createEmpty();
+        var bottomPadding = dataViewerVisible ? 300 : 0;
+        var leftPadding = navigationVisible ? 300 : 0;
         var layerExtent = ol.proj.transformExtent([
             minX, minY, maxX, maxY
         ], 'EPSG:4326', 'EPSG:3857');
         ol.extent.extend(extent, layerExtent);
-        map.getView().fit(extent, map.getSize());
+        map.getView().fit(extent, {padding: [0, 0, bottomPadding, leftPadding]}/*, map.getSize()*/);
     };
 
     /* Zooms to map layer */
@@ -520,7 +625,7 @@
     };
 
     /* Updates Data Viewer */
-    function updateDataViewer() {
+    function updateDataViewer(collapse) {
         $('.data-viewer-page').hide();
         $('.data-viewer-tab').hide();
         $('.layer-options-container').hide();
@@ -596,20 +701,24 @@
 
     /* Shows the data viewer window */
     function showDataViewer() {
-        $('.data-viewer-content').removeClass('hidden');
+        $('.data-viewer-container').addClass('data-viewer-container-expanded');
+        $('.ol-scale-line').addClass('ol-scale-line-up');
+        $('.ol-overviewmap').addClass('ol-overviewmap-up');
         $('#data-viewer-show').addClass('hidden');
         $('#data-viewer-hide').removeClass('hidden');
         $('#data-viewer-tabs').removeClass('hidden');
-        updateMapSize();
+        dataViewerVisible = true;
     };
 
     /* Hides the data viewer window */
     function hideDataViewer() {
-        $('.data-viewer-content').addClass('hidden');
+        $('.data-viewer-container').removeClass('data-viewer-container-expanded');
+        $('.ol-scale-line').removeClass('ol-scale-line-up');
+        $('.ol-overviewmap').removeClass('ol-overviewmap-up');
         $('#data-viewer-show').removeClass('hidden');
         $('#data-viewer-hide').addClass('hidden');
         $('#data-viewer-tabs').addClass('hidden');
-        updateMapSize();
+        dataViewerVisible = false;
     };
 
     /* Changes the data viewer tab */
@@ -632,6 +741,8 @@
     function removeLayer(evt) {
         workspaceTable.row('.selected').remove().draw(false);
         map.removeLayer(layerList[activeLayer]['layerSource']);
+        selectedLayer = {};
+        updateMapFeature();
         delete layerList[activeLayer];
         activeLayer = null;
         activeResource = null;
@@ -651,6 +762,7 @@
             $('#hide-layer-btn').removeClass('hidden');
         };
         layerList[activeLayer]['layerSource'].setVisible(layerList[activeLayer]['layerVisible']);
+        selectedFeature['layerSource'].setVisible(layerList[activeLayer]['layerVisible']);
     };
 
     /* Changes Layer Display Name */
@@ -829,7 +941,7 @@
         $(rowNode).find('td').eq(2).addClass('workspace-layer-move');
 
         // Gets SLD body for layer
-        var sldBody = buildLayerStyle(layerData);
+        var sldBody = buildLayerStyle(layerData, false);
 
         // Creates layer WMS object
         layerList[layerCode]['layerWMS'] = new ol.source.ImageWMS({
@@ -905,7 +1017,7 @@
     };
 
     /* Builds layer SLD */
-    function buildLayerStyle(layerData) {
+    function buildLayerStyle(layerData, filter) {
 
         if (layerData['layerSymbology']['labelField'] === 'none') {
             var labelRule = '';
@@ -944,57 +1056,13 @@
             '</FeatureTypeStyle>';
         };
 
-        if (selectedLayer['feature'] != null) {
-            var filters = '<ogc:FeatureId fid="' + selectedLayer['fid'].toString() + '"/>';
-        } else {
-            var filters = null;
-        };
-
         switch (layerData['layerType']) {
             case 'timeseries':
             case 'point':
-                if (filters != null) {
-                    var filterRule = '<FeatureTypeStyle>' +
-                        '<Rule>' +
-                            '<ogc:Filter>' +
-                                filters + 
-                            '</ogc:Filter>' +
-                            '<PointSymbolizer>' +
-                                '<Graphic>' +
-                                    '<Mark>' +
-                                        '<WellKnownName>' +
-                                            layerData['layerSymbology']['fillShape'] +
-                                        '</WellKnownName>' +
-                                        '<Fill>' +
-                                            '<CssParameter name="fill">' +
-                                                layerData['layerSymbology']['fillColor'] +
-                                            '</CssParameter>' +
-                                            '<CssParameter name="fill-opacity">' +
-                                                layerData['layerSymbology']['fillOpacity'] +
-                                            '</CssParameter>' +
-                                        '</Fill>' +
-                                        '<Stroke>' +
-                                            '<CssParameter name="stroke">' +
-                                                '#42E9F5' +
-                                            '</CssParameter>' +
-                                            '<CssParameter name="stroke-width">' +
-                                                (parseFloat(layerData['layerSymbology']['strokeSize']) + 2).toString() +
-                                            '</CssParameter>' + 
-                                        '</Stroke>' +
-                                    '</Mark>' +
-                                    '<Size>' +
-                                        layerData['layerSymbology']['fillSize'] +
-                                    '</Size>' +
-                                '</Graphic>' +
-                            '</PointSymbolizer>' +
-                        '</Rule>' +
-                    '</FeatureTypeStyle>';
-                } else {
-                    var filterRule = ''
-                };
                 switch (layerData['layerSymbology']['fillType']) {
                     case 'simple':
                         var sldRules = '<Rule>' +
+                            ((filter === true) ? '<ogc:Filter><ogc:FeatureId fid="' + selectedLayer['fid'].toString() + '"/></ogc:Filter>' : '') +
                             '<PointSymbolizer>' +
                                 '<Graphic>' +
                                     '<Mark>' +
@@ -1011,13 +1079,13 @@
                                         '</Fill>' +
                                         '<Stroke>' +
                                             '<CssParameter name="stroke">' +
-                                                layerData['layerSymbology']['strokeColor'] +
+                                                ((filter === true) ? '#42E9F5' : layerData['layerSymbology']['strokeColor']) +
                                             '</CssParameter>' +
                                             '<CssParameter name="stroke-opacity">' +
-                                                layerData['layerSymbology']['strokeOpacity'] +
+                                                ((filter === true) ? '1' : layerData['layerSymbology']['strokeOpacity']) +
                                             '</CssParameter>' + 
                                             '<CssParameter name="stroke-width">' +
-                                                layerData['layerSymbology']['strokeSize'] +
+                                                ((filter === true) ? (parseFloat(layerData['layerSymbology']['strokeSize']) + 2).toString() : layerData['layerSymbology']['strokeSize']) +
                                             '</CssParameter>' + 
                                         '</Stroke>' +
                                     '</Mark>' +
@@ -1051,6 +1119,7 @@
                                     '<ogc:Literal>' + colormap['colors'][i] + '</ogc:Literal>'
                             };
                             var sldRules = '<Rule>' +
+                                ((filter === true) ? '<ogc:Filter><ogc:FeatureId fid="' + selectedLayer['fid'].toString() + '"/></ogc:Filter>' : '') +
                                 '<PointSymbolizer>' +
                                     '<Graphic>' +
                                         '<Mark>' +
@@ -1071,13 +1140,13 @@
                                             '</Fill>' +
                                             '<Stroke>' +
                                                 '<CssParameter name="stroke">' +
-                                                    layerData['layerSymbology']['strokeColor'] +
+                                                    ((filter === true) ? '#42E9F5' : layerData['layerSymbology']['strokeColor']) +
                                                 '</CssParameter>' +
                                                 '<CssParameter name="stroke-opacity">' +
-                                                    layerData['layerSymbology']['strokeOpacity'] +
+                                                    ((filter === true) ? '1' : layerData['layerSymbology']['strokeOpacity']) +
                                                 '</CssParameter>' + 
                                                 '<CssParameter name="stroke-width">' +
-                                                    layerData['layerSymbology']['strokeSize'] +
+                                                    ((filter === true) ? (parseFloat(layerData['layerSymbology']['strokeSize']) + 2).toString() : layerData['layerSymbology']['strokeSize']) +
                                                 '</CssParameter>' + 
                                             '</Stroke>' +
                                         '</Mark>' +
@@ -1092,40 +1161,20 @@
                 };
                 break;
             case 'line':
-                if (filters != null) {
-                    var filterRule = '<FeatureTypeStyle>' +
-                        '<Rule>' +
-                            '<ogc:Filter>' +
-                                filters + 
-                            '</ogc:Filter>' +
-                            '<LineSymbolizer>' +
-                                '<Stroke>' +
-                                    '<CssParameter name="stroke">' +
-                                        '#42E9F5' +
-                                    '</CssParameter>' +
-                                    '<CssParameter name="stroke-width">' +
-                                        (parseFloat(layerData['layerSymbology']['strokeSize']) + 2).toString() +
-                                    '</CssParameter>' + 
-                                '</Stroke>' +
-                            '</LineSymbolizer>' +
-                        '</Rule>' +
-                    '</FeatureTypeStyle>';
-                } else {
-                    var filterRule = ''
-                };
                 switch (layerData['layerSymbology']['strokeType']) {
                     case 'simple':
                         var sldRules = '<Rule>' +
+                            ((filter === true) ? '<ogc:Filter><ogc:FeatureId fid="' + selectedLayer['fid'].toString() + '"/></ogc:Filter>' : '') +
                             '<LineSymbolizer>' +
                                 '<Stroke>' +
                                     '<CssParameter name="stroke">' +
-                                        layerData['layerSymbology']['strokeColor'] +
+                                        ((filter === true) ? '#42E9F5' : layerData['layerSymbology']['strokeColor']) +
                                     '</CssParameter>' +
                                     '<CssParameter name="stroke-opacity">' +
-                                        layerData['layerSymbology']['strokeOpacity'] +
+                                        ((filter === true) ? '1' : layerData['layerSymbology']['strokeOpacity']) +
                                     '</CssParameter>' + 
                                     '<CssParameter name="stroke-width">' +
-                                        layerData['layerSymbology']['strokeSize'] +
+                                        ((filter === true) ? (parseFloat(layerData['layerSymbology']['strokeSize']) + 2).toString() : layerData['layerSymbology']['strokeSize']) +
                                     '</CssParameter>' + 
                                 '</Stroke>' +
                             '</LineSymbolizer>' +
@@ -1154,20 +1203,22 @@
                                     '<ogc:Literal>' + colormap['colors'][i] + '</ogc:Literal>'
                             };
                             var sldRules = '<Rule>' +
+                                ((filter === true) ? '<ogc:Filter><ogc:FeatureId fid="' + selectedLayer['fid'].toString() + '"/></ogc:Filter>' : '') +
                                 '<LineSymbolizer>' +
                                     '<Stroke>' +
                                         '<CssParameter name="stroke">' +
+                                            ((filter === true) ? '#42E9F5' : (
                                             '<ogc:Function name="Interpolate">' +
                                                 '<ogc:PropertyName>' + layerData['layerSymbology']['strokeField'] +'</ogc:PropertyName>' +
-                                                gradValue +
+                                                    gradValue +
                                                 '<ogc:Literal>color</ogc:Literal>' +
-                                            '</ogc:Function>' +
+                                            '</ogc:Function>')) +
                                         '</CssParameter>' +
                                         '<CssParameter name="stroke-opacity">' +
-                                            layerData['layerSymbology']['strokeOpacity'] +
+                                            ((filter === true) ? '1' : layerData['layerSymbology']['strokeOpacity']) +
                                         '</CssParameter>' + 
                                         '<CssParameter name="stroke-width">' +
-                                            layerData['layerSymbology']['strokeSize'] +
+                                            ((filter === true) ? (parseFloat(layerData['layerSymbology']['strokeSize']) + 2).toString() : layerData['layerSymbology']['strokeSize']) +
                                         '</CssParameter>' + 
                                     '</Stroke>' +
                                 '</LineSymbolizer>' +
@@ -1177,48 +1228,28 @@
                 };
                 break;
             case 'polygon':
-                if (filters != null) {
-                    var filterRule = '<FeatureTypeStyle>' +
-                        '<Rule>' +
-                            '<ogc:Filter>' +
-                                filters + 
-                            '</ogc:Filter>' +
-                            '<PolygonSymbolizer>' +
-                                '<Stroke>' +
-                                    '<CssParameter name="stroke">' +
-                                        '#42E9F5' +
-                                    '</CssParameter>' +
-                                    '<CssParameter name="stroke-width">' +
-                                        (parseFloat(layerData['layerSymbology']['strokeSize']) + 2).toString() +
-                                    '</CssParameter>' + 
-                                '</Stroke>' +
-                            '</PolygonSymbolizer>' +
-                        '</Rule>' +
-                    '</FeatureTypeStyle>';
-                } else {
-                    var filterRule = ''
-                };
                 switch (layerData['layerSymbology']['fillType']) {
                     case 'simple':
                         var sldRules = '<Rule>' +
+                            ((filter === true) ? '<ogc:Filter><ogc:FeatureId fid="' + selectedLayer['fid'].toString() + '"/></ogc:Filter>' : '') +
                             '<PolygonSymbolizer>' +
                                 '<Fill>' +
                                     '<CssParameter name="fill">' +
                                         layerData['layerSymbology']['fillColor'] +
                                     '</CssParameter>' +
                                     '<CssParameter name="fill-opacity">' +
-                                        layerData['layerSymbology']['fillOpacity'] +
+                                        ((filter === true) ? '0' : layerData['layerSymbology']['fillOpacity']) +
                                     '</CssParameter>' +
                                 '</Fill>' +
                                 '<Stroke>' +
                                     '<CssParameter name="stroke">' +
-                                        layerData['layerSymbology']['strokeColor'] +
+                                        ((filter === true) ? '#42E9F5' : layerData['layerSymbology']['strokeColor']) +
                                     '</CssParameter>' +
                                     '<CssParameter name="stroke-opacity">' +
-                                        layerData['layerSymbology']['strokeOpacity'] +
+                                        ((filter === true) ? '1' : layerData['layerSymbology']['strokeOpacity']) +
                                     '</CssParameter>' + 
                                     '<CssParameter name="stroke-width">' +
-                                        layerData['layerSymbology']['strokeSize'] +
+                                        ((filter === true) ? (parseFloat(layerData['layerSymbology']['strokeSize']) + 2).toString() : layerData['layerSymbology']['strokeSize']) +
                                     '</CssParameter>' + 
                                 '</Stroke>' +
                             '</PolygonSymbolizer>' +
@@ -1247,6 +1278,7 @@
                                     '<ogc:Literal>' + colormap['colors'][i] + '</ogc:Literal>'
                             };
                             var sldRules = '<Rule>' +
+                                ((filter === true) ? '<ogc:Filter><ogc:FeatureId fid="' + selectedLayer['fid'].toString() + '"/></ogc:Filter>' : '') +
                                 '<PolygonSymbolizer>' +
                                     '<Fill>' +
                                         '<CssParameter name="fill">' +
@@ -1257,18 +1289,18 @@
                                             '</ogc:Function>' +
                                         '</CssParameter>' +
                                         '<CssParameter name="fill-opacity">' +
-                                            layerData['layerSymbology']['fillOpacity'] +
+                                            ((filter === true) ? '0' : layerData['layerSymbology']['fillOpacity']) +
                                         '</CssParameter>' +
                                     '</Fill>' +
                                     '<Stroke>' +
                                         '<CssParameter name="stroke">' +
-                                            layerData['layerSymbology']['strokeColor'] +
+                                            ((filter === true) ? '#42E9F5' : layerData['layerSymbology']['strokeColor']) +
                                         '</CssParameter>' +
                                         '<CssParameter name="stroke-opacity">' +
-                                            layerData['layerSymbology']['strokeOpacity'] +
+                                            ((filter === true) ? '1' : layerData['layerSymbology']['strokeOpacity']) +
                                         '</CssParameter>' + 
                                         '<CssParameter name="stroke-width">' +
-                                            layerData['layerSymbology']['strokeSize'] +
+                                            ((filter === true) ? (parseFloat(layerData['layerSymbology']['strokeSize']) + 2).toString() : layerData['layerSymbology']['strokeSize']) +
                                         '</CssParameter>' + 
                                     '</Stroke>' +
                                 '</PolygonSymbolizer>' +
@@ -1327,12 +1359,10 @@
                         '<FeatureTypeStyle>' +
                         sldRules +
                         '</FeatureTypeStyle>' +
-                        filterRule +
                         labelRule +
                     '</UserStyle>' +
                 '</NamedLayer>' +
             '</StyledLayerDescriptor>';
-
         return sldString;
     };
 
@@ -1745,7 +1775,7 @@
 
     /* Changes Layer Symbology */
     function updateLayerSymbology(force) {
-        var sldBodyOld = buildLayerStyle(layerList[activeLayer]);
+        var sldBodyOld = buildLayerStyle(layerList[activeLayer], false);
         switch (layerList[activeLayer]['layerType']) {
             case 'timeseries':
             case 'point':
@@ -1799,9 +1829,10 @@
                 layerList[activeLayer]['layerSymbology']['fillOpacity'] = $('#fill-opacity-input').val();
                 break;
         };
-        var sldBody = buildLayerStyle(layerList[activeLayer]);
+        var sldBody = buildLayerStyle(layerList[activeLayer], false);
         if (sldBodyOld !== sldBody || force === true) {
             layerList[activeLayer]['layerWMS'].updateParams({'SLD_BODY': sldBody});
+            updateMapFeature();
         };
         updateSymbologyFields();
     };
@@ -1919,36 +1950,38 @@
             },
             url: '/apps/hydroshare-data-viewer/ajax/get-timeseries-data/',
             success: function(response) {
-                var timeseriesData = [];
-                for (var i = 0; i < response['timeseries_data'].length; i++) {
-                    timeseriesData.push({
-                        'x': Date.parse(response['timeseries_data'][i][0]),
-                        'y': parseFloat(response['timeseries_data'][i][1])
-                    })
+                if (response['layer_code'] === activeLayer && response['variable_code'] === selectedLayer['row'][3] && response['site_code'] === selectedLayer['row'][1]) {
+                    var timeseriesData = [];
+                    for (var i = 0; i < response['timeseries_data'].length; i++) {
+                        timeseriesData.push({
+                            'x': Date.parse(response['timeseries_data'][i][0]),
+                            'y': parseFloat(response['timeseries_data'][i][1])
+                        })
+                    };
+                    timeseriesPlot = new CanvasJS.Chart('plot', {
+                        height: 250,
+                        responsive: true,
+                        animationEnabled: true,
+                        zoomEnabled: true,
+                        title: {
+                            text: response['variable_name'] + ' at ' + response['site_name']
+                        },
+                        axisX: {},
+                        axisY: {
+                            title: response['variable_name'] + ' (' + response['unit_name'] + ')',
+                        },
+                        data: [{
+                            type:'line',
+                            name: response['variable_name'],
+                            xValueType: 'dateTime',
+                            xValueFormatString: 'DD MMM hh:mm TT',
+                            dataPoints: timeseriesData
+                        }]
+                    });
+                    $('#plot-loading').hide();
+                    $('#plot-container').show();
+                    updateMapSize();
                 };
-                timeseriesPlot = new CanvasJS.Chart('plot', {
-                    height: 250,
-                    responsive: true,
-                    animationEnabled: true,
-                    zoomEnabled: true,
-                    title: {
-                        text: response['variable_name'] + ' at ' + response['site_name']
-                    },
-                    axisX: {},
-                    axisY: {
-                        title: response['variable_name'] + ' (' + response['unit_name'] + ')',
-                    },
-                    data: [{
-                        type:'line',
-                        name: response['variable_name'],
-                        xValueType: 'dateTime',
-                        xValueFormatString: 'DD MMM hh:mm TT',
-                        dataPoints: timeseriesData
-                    }]
-                });
-                $('#plot-loading').hide();
-                $('#plot-container').show();
-                updateMapSize();
             },
             error: function(response) {
                 console.log('Layer Load Failed');
@@ -1989,7 +2022,7 @@
     $(document).on('click', '.nav-tab-button', toggleNavTabs);
 
     /* Listener for updating map size on nav toggle */
-    $(document).on('click', '.toggle-nav', updateMapSize);
+    $(document).on('click', '.toggle-nav', toggleNavigation);
 
     /* Listener for changing data viewer tabs */
     $(document).on('click', '.data-viewer-tab', changeDataViewerTab);

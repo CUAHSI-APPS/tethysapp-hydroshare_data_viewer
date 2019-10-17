@@ -336,5 +336,8 @@ def get_timeseries_data(request):
     return_obj["site_name"] = site_name
     return_obj["variable_name"] = variable_name
     return_obj["unit_name"] = unit_name
+    return_obj["variable_code"] = variable_code
+    return_obj["site_code"] = site_code
+    return_obj["layer_code"] = layer_code
 
     return JsonResponse(return_obj) 

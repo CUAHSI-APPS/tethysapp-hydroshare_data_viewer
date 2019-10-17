@@ -49,7 +49,8 @@ def get_layers(resource_id):
                 "layerType": layer_type,
                 "layerFields": layer_fields,
                 "layerSymbology": get_layer_symbology(layer_type, layer_fields),
-                "layerVisible": True
+                "layerVisible": True,
+                "layerOrder": 0
             })
 
     # Get Raster Layers
