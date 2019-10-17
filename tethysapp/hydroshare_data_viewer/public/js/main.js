@@ -204,7 +204,7 @@
         $('#app-content-wrapper').append(`<div id="map" class="map">
             <div class="ol-layer-switcher ol-control dropdown">
               <button id="layer-switcher-button" class="dropdown-toggle" type="button" title="Show Me" data-toggle="dropdown">
-                <span class="glyphicon glyphicon-globe"></span>
+                <span class="glyphicon glyphicon-cog"></span>
               </button>
               <div id="basemap-menu" class="dropdown-menu">
                 <div>
@@ -233,6 +233,10 @@
                   <label class="basemap-label" for="labels">Reference</label>
                 </div>
                 <div>
+                  <input type="checkbox" id="legend-select" class="basemap-radio" name="basemap" value="labels">
+                  <label class="basemap-label" for="labels">Legend</label>
+                </div>
+                <div>
                   <input type="checkbox" id="overview-map-select" class="basemap-radio" name="basemap" value="labels">
                   <label class="basemap-label" for="labels">Overview Map</label>
                 </div>
@@ -242,7 +246,7 @@
                 </div>
               </div>
             </div>
-            <div class="ol-legend ol-control hidden">
+            <div class="ol-legend ol-control">
               <div class="legend-title"><b>Legend</b></div>
               <div class="legend-content">
 
@@ -301,7 +305,50 @@
 
     /* Updates Legend */
     function updateLegend() {
-
+        $('.legend-content').empty();
+        for (var layerCode in layerList) {
+            if (layerList[layerCode]['layerVisible'] === true) {
+                $('.legend-content').append(`
+                    <div class="legend-row">
+                        <div class="legend-icon">${createLayerIcon(layerCode)}</div>
+                        <div class="legend-name">${layerList[layerCode]['layerName']}</div>
+                    </div>
+                `);
+                if (layerList[layerCode]['layerSymbology']['fillType'] === 'gradient') {
+                    var gradientCode = Math.random().toString(36).substring(7);
+                    var fillGradient = layerList[layerCode]['layerSymbology']['fillGradient'];
+                    var fillField = layerList[layerCode]['layerSymbology']['fillField'];
+                    var fieldStats = layerList[layerCode]['layerFields'][layerList[layerCode]['layerFields'].findIndex(x => x.fieldName === fillField)]['fieldStats'];
+                    if (fieldStats !== 'loading') {
+                        var colorMap = getColorMap(fillGradient, fieldStats);
+                        var svgGradient = ``;
+                        for (var i = 0; i < colorMap['colors'].length; i++) { 
+                            svgGradient = svgGradient + `<stop offset="${(((colorMap['positions'][i] - fieldStats['min']) / (fieldStats['max'] - fieldStats['min'])) * 100).toString()}%" style="stop-color:${colorMap['colors'][i]};stop-opacity:1" />`
+                        };
+                        var layerGradient = `
+                            <svg height="30" width="200" style="display: block;">
+                                <defs>
+                                    <linearGradient id="${'grad-' + gradientCode}" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        ${svgGradient}
+                                    </linearGradient>
+                                </defs>
+                              <style>
+                                .grad-text { font: 14px sans-serif; }
+                              </style>
+                                <rect class="workspace-icon" width="200" height="10" fill="url(#${'grad-' + gradientCode})" stroke="black" stroke-width="0.3"/>
+                                <text x=0 y=25 class="grad-text">${fieldStats['min'].toPrecision(4)}</text>
+                                <text text-anchor="end" x=200 y=25 class="grad-text">${fieldStats['max'].toPrecision(4)}</text>
+                            </svg>
+                        `;
+                        $('.legend-content').append(`
+                            <div class="legend-gradient">
+                                ${layerGradient}
+                            </div>
+                        `);
+                    };
+                };
+            };
+        };
     };
 
     /* Updates OpenLayers basemap */
@@ -424,6 +471,11 @@
             $('.ol-overviewmap').show();
         } else {
             $('.ol-overviewmap').hide();
+        };
+        if ($('#legend-select').is(':checked')) {
+            $('.ol-legend').show();
+        } else {
+            $('.ol-legend').hide();
         };
         if (basemapLabels) {
             map.addLayer(basemapLabels);
@@ -758,6 +810,7 @@
         activeLayer = null;
         activeResource = null;
         updateDataViewer();
+        updateLegend();
     };
 
     /* Updates Layer Visibility */
@@ -773,7 +826,10 @@
             $('#hide-layer-btn').removeClass('hidden');
         };
         layerList[activeLayer]['layerSource'].setVisible(layerList[activeLayer]['layerVisible']);
-        selectedFeature['layerSource'].setVisible(layerList[activeLayer]['layerVisible']);
+        try {
+            selectedFeature['layerSource'].setVisible(layerList[activeLayer]['layerVisible']);
+        } catch {};
+        updateLegend();
     };
 
     /* Changes Layer Display Name */
@@ -786,6 +842,7 @@
                 workspaceTable.cell(this[0][0], 3).data(layerList[activeLayer]['layerName']);
             };
         });
+        updateLegend();
     };
 
     /* Cancels layer rename */
@@ -995,6 +1052,9 @@
 
         //Reorder map layers
         reorderMapLayers();
+
+        // Update legend
+        updateLegend();
 
         return true;
     };
@@ -1374,7 +1434,6 @@
                     '</UserStyle>' +
                 '</NamedLayer>' +
             '</StyledLayerDescriptor>';
-        console.log(sldString)
         return sldString;
     };
 
@@ -1738,14 +1797,19 @@
                                 <linearGradient id="${'grad-' + gradientCode}" x1="0%" y1="0%" x2="100%" y2="0%">
                                     ${svgGradient}
                                 </linearGradient>
+                                <pattern id="${'grid-' + gradientCode + 'G'}" width="4" height="4" patternUnits="userSpaceOnUse">
+                                  <path d="M 8 0 L 0 0 0 8" fill="none" stroke="black" stroke-width="0.3"/>
+                                </pattern>
                             </defs>`;
                         var fill = `url(#${'grad-' + gradientCode})`;
+                        var grid = `url(#${'grid-' + gradientCode + 'G'})`;
                         break;
                 };
                 var layerIcon = `
                     <svg height="24" width="24" style="display: block;">
                         ${def}
                         <rect class="workspace-icon" width="24" height="24" fill="${fill}" />
+                        <rect class="workspace-icon" width="24" height="24" fill="${grid}" stroke="black" stroke-width="0.3"/>
                     </svg>
                 `;
                 break;
@@ -1844,6 +1908,7 @@
         var sldBody = buildLayerStyle(layerList[activeLayer], false);
         if (sldBodyOld !== sldBody || force === true) {
             layerList[activeLayer]['layerWMS'].updateParams({'SLD_BODY': sldBody});
+            updateLegend();
             updateMapFeature();
         };
         updateSymbologyFields();

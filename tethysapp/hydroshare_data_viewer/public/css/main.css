@@ -62,10 +62,39 @@
     z-index: 2;
     right: 8px;
     top: 8px;
+    padding-bottom: 10px;
+    border: 1px solid gray;
 }
 
 .legend-title {
-    padding: 10px;
+    margin: 10px;
+    padding-bottom: 5px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid lightgrey;
+}
+
+.legend-row {
+    margin-top: 10px;
+    margin-left: 10px;
+    margin-right: 10px;
+    height: 30px;
+}
+
+.legend-icon {
+    float: left;
+    margin-right: 10px;
+}
+
+.legend-gradient {
+    margin-left: 10px;
+    margin-right: 10px;
+    height: 30px;
+}
+
+.legend-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .ol-scale-line {
@@ -217,7 +246,6 @@
     margin-left: 6px;
     height: 100%;
     width: 220px;
-    font-family: "HelveticaNeue-Light";
 }
 
 .nav-table-container {
