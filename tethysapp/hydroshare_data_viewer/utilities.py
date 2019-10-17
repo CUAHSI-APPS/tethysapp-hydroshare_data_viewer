@@ -144,11 +144,17 @@ def get_field_stats(layer_type, layer_code, resource_id, field_name, field_type)
         response = requests.get(request_url)
         root = etree.fromstring(response.content)
         layer_raster_stats = list(root.iter("{http://www.opengis.net/sld}ColorMapEntry"))
-        return {
-            "min": float(layer_raster_stats[1].attrib["quantity"]),
-            "max": float(layer_raster_stats[2].attrib["quantity"]),
-            "ndv": float(layer_raster_stats[0].attrib["quantity"])
-        }
+        if len(layer_raster_stats) == 3:
+            return {
+                "min": float(layer_raster_stats[1].attrib["quantity"]),
+                "max": float(layer_raster_stats[2].attrib["quantity"]),
+                "ndv": float(layer_raster_stats[0].attrib["quantity"])
+            }
+        else:
+            return {
+                "min": float(layer_raster_stats[0].attrib["quantity"]),
+                "max": float(layer_raster_stats[1].attrib["quantity"]),
+            }
     else:
         request_url = f"{geoserver_url}/wfs?service=WFS&version=1.1.0&request=GetFeature&typename={layer_code}&maxFeatures=1&sortBy={field_name}+D&propertyName={field_name}"
         response = requests.get(request_url)

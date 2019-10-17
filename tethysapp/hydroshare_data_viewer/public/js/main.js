@@ -242,6 +242,12 @@
                 </div>
               </div>
             </div>
+            <div class="ol-legend ol-control hidden">
+              <div class="legend-title"><b>Legend</b></div>
+              <div class="legend-content">
+
+              </div>
+            </div>
           </div>`);
 
         // Initializes map div.
@@ -291,6 +297,11 @@
 
         // Load initial basemap.
         updateBasemap();
+    };
+
+    /* Updates Legend */
+    function updateLegend() {
+
     };
 
     /* Updates OpenLayers basemap */
@@ -1363,6 +1374,7 @@
                     '</UserStyle>' +
                 '</NamedLayer>' +
             '</StyledLayerDescriptor>';
+        console.log(sldString)
         return sldString;
     };
 
