@@ -278,6 +278,68 @@ def update_attribute_table(request):
     return JsonResponse(return_obj)
 
 
+def select_feature(request):
+    """
+    AJAX Controller for getting selected feature.
+    """
+
+    return_obj = {}
+
+    # -------------------- #
+    #   VERIFIES REQUEST   #
+    # -------------------- #
+
+    if not (request.is_ajax() and request.method == "POST"):
+        return_obj["error"] = "Unable to establish a secure connection."
+
+        return JsonResponse(return_obj)
+
+    # -------------------------- #
+    #   GETS DATA FROM REQUEST   #
+    # -------------------------- #
+
+    feature_url = request.POST.get("feature_url")
+    field_list = [i["fieldName"] for i in json.loads(request.POST.get("field_list"))["fields"]]
+    layer_code = request.POST.get("layer_code")
+
+    # ------------------- #
+    #   GETS FIELD DATA   #
+    # ------------------- #
+
+    request_url = feature_url + "&propertyName" + ",".join(field_list)
+    response = json.loads(requests.get(request_url).content)
+    if response["features"]:
+        request_url = f"{geoserver_url}/wfs/"
+        request_params = {
+            "service": "WFS",
+            "version": "1.1.0",
+            "request": "GetFeature",
+            "typeName": layer_code,
+            "resultType": "hits"
+        }
+        count_response = requests.get(request_url, params=request_params)
+        root = etree.fromstring(count_response.content)
+        layer_count = int(next(root.iter("{http://www.opengis.net/wfs}FeatureCollection")).get("numberOfFeatures"))
+        fid_list = [str(i) for i in list(range(1,layer_count + 1))]
+        fid_list.sort()
+        fid = response["features"][0]["id"]
+        feature = fid_list.index(response["features"][0]["id"].split(".")[-1])
+        row = list(response["features"][0]["properties"].values())
+    else:
+        fid = None
+        feature = None
+        row = None
+
+    # -------------------------- #
+    #   RETURNS DATA TO CLIENT   #
+    # -------------------------- #
+
+    return_obj['fid'] = fid
+    return_obj['feature'] = feature
+    return_obj['row'] = row
+    return JsonResponse(return_obj)
+
+
 def get_timeseries_data(request):
     """
     AJAX Controller for getting time series data.

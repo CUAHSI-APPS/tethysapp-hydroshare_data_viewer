@@ -27,6 +27,9 @@
     var activeFeature = null;
     var dataViewerVisible = false;
     var navigationVisible = true;
+    var featureLoading = false;
+    var mapPopup;
+    var rasterValue;
 
     /*****************************************************************************************
      ******************************** FUNCTION DECLARATIONS **********************************
@@ -202,6 +205,7 @@
 
         // Creates map html.
         $('#app-content-wrapper').append(`<div id="map" class="map">
+            <div id="map-popup"></div>
             <div class="ol-layer-switcher ol-control dropdown">
               <button id="layer-switcher-button" class="dropdown-toggle" type="button" title="Show Me" data-toggle="dropdown">
                 <span class="glyphicon glyphicon-cog"></span>
@@ -255,18 +259,28 @@
           </div>`);
 
         // Initializes map div.
+        var mapView = new ol.View({
+            center: ol.proj.transform([0, 0], 'EPSG:4326', 'EPSG:3857'),
+            zoom: 1.8,
+            minZoom: 1.8,
+            maxZoom: 17
+        });
         map = new ol.Map({
             target: 'map',        
-            view: new ol.View({
-                center: ol.proj.transform([0, 0], 'EPSG:4326', 'EPSG:3857'),
-                zoom: 1.8,
-                minZoom: 1.8,
-                maxZoom: 17
-            })
+            view: mapView
         });
 
         // Adds a scale line control to the map.
         map.addControl(new ol.control.ScaleLine());
+
+        // Adds map popup
+        mapPopup = new ol.Overlay({
+            element: $('#map-popup')[0],
+            positioning: 'bottom-center',
+            stopEvent: true
+        });
+
+        map.addOverlay(mapPopup);
 
         // Uses grab cursor when dragging the map.
         map.on('pointerdrag', function(evt) {
@@ -274,6 +288,73 @@
         });
         map.on('pointerup', function(evt) {
             map.getViewport().style.cursor = "default";
+        });
+
+        map.on('click', function(evt) {
+            if (activeLayer !== null) {
+                var viewResolution = (mapView.getResolution());
+                var url = layerList[activeLayer]['layerSource'].getSource().getGetFeatureInfoUrl(
+                    evt.coordinate, viewResolution, 'EPSG:3857',
+                    {'INFO_FORMAT': 'application/json'});
+                var featureUrl = url
+                if (layerList[activeLayer]['layerType'] === 'raster') {
+                    $.ajax({
+                        type: 'GET',
+                        url: featureUrl,
+                        success: function(response) {
+                            try {
+                                rasterValue = response['features'][0]['properties'][Object.keys(response['features'][0]['properties'])[0]]
+                            } catch {
+                                rasterValue = '';
+                            };
+                            $('#map-popup').popover({
+                                'placement': 'top',
+                                'html': false,
+                                'content': function() {
+                                    return rasterValue
+                                }
+                            });
+                            if (rasterValue !== '') {
+                                mapPopup.setPosition(evt.coordinate);
+                            } else {
+                                mapPopup.setPosition(undefined);
+                            };
+                            $('#map-popup').popover('show');
+                        },
+                        error: function(response) {
+                            console.log('Layer Load Failed');
+                        }
+                    })
+                } else {
+                    var fieldList = JSON.stringify({'fields': layerList[activeLayer]['layerFields']});
+                    if (featureLoading === false) {
+                        featureLoading = true;
+                        $('body').addClass('waiting');
+                        $.ajax({
+                            headers: {
+                                'X-CSRFToken': getCookie('csrftoken')
+                            },
+                            type: 'POST',
+                            data: {
+                                'feature_url': featureUrl,
+                                'field_list': fieldList,
+                                'layer_code': activeLayer
+                            },
+                            url: '/apps/hydroshare-data-viewer/ajax/select-feature/',
+                            success: function(response) {
+                                featureLoading = false;
+                                $('body').removeClass('waiting');
+                                selectFeature('map', response['fid'], response['feature'], response['row']);
+                            },
+                            error: function(response) {
+                                featureLoading = false;
+                                $('body').removeClass('waiting');
+                                console.log('Layer Load Failed');
+                            }
+                        });
+                    };
+                };
+            };
         });
 
         // Don't close dropdown menu on inside click.
@@ -487,14 +568,19 @@
         var timeout = 200;
         setTimeout(function() {
             map.updateSize();
-            try {
-                timeseriesPlot.render();
-                timeseriesPlot.update();
-            } catch(e) {};
+            updatePlotSize();
             try {
                 $('#attribute-table').DataTable().ajax.reload();
             } catch (e) {};
         }, timeout);
+    };
+
+    /* Updates plot size */
+    function updatePlotSize() {
+        try {
+            timeseriesPlot.render();
+            timeseriesPlot.update();
+        } catch(e) {};
     };
 
     /* Debounce window resize events */
@@ -548,27 +634,59 @@
     };
 
     /* Sets selected feature of a layer */
-    function selectFeature() {
-        var attributeRowSelected = attributeTable.rows({selected: true}).data();
-        if (attributeRowSelected[0] != null) {
-            if (selectedLayer['fid'] != attributeRowSelected[0][0]) {
-                selectedLayer['fid'] = attributeRowSelected[0][0];
-                selectedLayer['feature'] = attributeRowSelected[0][1];
-                var fields = []
-                for (var i = 0; i < layerList[activeLayer]['layerFields'].length; i++) {
-                    fields.push(layerList[activeLayer]['layerFields'][i]['fieldName'])
+    function selectFeature(selectType, fid, feature, row) {
+        if (selectType === 'map') {
+            if (fid != null) {
+                if (selectedLayer['fid'] != fid) {
+                    selectedLayer['fid'] = fid;
+                    selectedLayer['feature'] = feature;
+                    var fields = []
+                    for (var i = 0; i < layerList[activeLayer]['layerFields'].length; i++) {
+                        fields.push(layerList[activeLayer]['layerFields'][i]['fieldName'])
+                    };
+                    selectedLayer['fields'] = fields;
+                    selectedLayer['row'] = row;
+                    if (layerList[activeLayer]['layerType'] === 'timeseries') {
+                        buildPlot();
+                    };
+                    updateMapFeature();
+                    $('#attribute-table').DataTable().scroller.toPosition(selectedLayer['feature'], false);
+                    attributeTable.rows().eq(0).each(function(index){
+                        var row = attributeTable.row(index);
+                        var data = row.data();
+                        if (data[0] === selectedLayer['fid']) {
+                            row.select();
+                        };
+                    });
                 };
-                selectedLayer['fields'] = fields;
-                selectedLayer['row'] = attributeRowSelected[0].slice(2);
-                if (layerList[activeLayer]['layerType'] === 'timeseries') {
-                    buildPlot();
-                };
+            } else {
+                $('#ts-plot').addClass('disabled-tab');
+                selectedLayer = {};
+                attributeTable.rows().deselect();
                 updateMapFeature();
             };
         } else {
-            $('#ts-plot').addClass('disabled-tab');
-            selectedLayer = {};
-            updateMapFeature();
+            var attributeRowSelected = attributeTable.rows({selected: true}).data();
+            if (attributeRowSelected[0] != null) {
+                if (selectedLayer['fid'] != attributeRowSelected[0][0]) {
+                    selectedLayer['fid'] = attributeRowSelected[0][0];
+                    selectedLayer['feature'] = attributeRowSelected[0][1];
+                    var fields = []
+                    for (var i = 0; i < layerList[activeLayer]['layerFields'].length; i++) {
+                        fields.push(layerList[activeLayer]['layerFields'][i]['fieldName'])
+                    };
+                    selectedLayer['fields'] = fields;
+                    selectedLayer['row'] = attributeRowSelected[0].slice(2);
+                    if (layerList[activeLayer]['layerType'] === 'timeseries') {
+                        buildPlot();
+                    };
+                    updateMapFeature();
+                };
+            } else {
+                $('#ts-plot').addClass('disabled-tab');
+                selectedLayer = {};
+                updateMapFeature();
+            };
         };
     };
 
@@ -696,6 +814,9 @@
         $('#hide-layer-btn').addClass('hidden');
         $('.data-viewer-tab').removeClass('active-tab');
         $('#label-field-input').empty();
+        try {
+            mapPopup.setPosition(undefined);
+        } catch {};
         if (activeLayer != null) {
             $('.resource-info-container').hide();
             $('.data-view-loading-container').show();
@@ -795,7 +916,7 @@
                 $('#attribute-table').DataTable().ajax.reload();
             };
             if ($(this).attr('id') === 'ts-plot') {
-                updateMapSize();
+                updatePlotSize();
             };
         };
     };
@@ -1971,9 +2092,6 @@
                     'X-CSRFToken': getCookie('csrftoken')
                 }
             },
-            'drawCallback': function() {
-                $('.dataTables_scrollHeadInner').css({'width':'100%'});
-            },
             'deferRender': true,
             'scrollY': 209,
             'scrollX': '100%',
@@ -1990,6 +2108,7 @@
                 {'visible': false, 'targets': [0]},
             ],
             'drawCallback': function() {
+                $('.dataTables_scrollHeadInner').css({'width':'100%'});
                 attributeTable.rows().eq(0).each(function(index){
                     var row = attributeTable.row(index);
                     var data = row.data();
@@ -2057,7 +2176,7 @@
                     });
                     $('#plot-loading').hide();
                     $('#plot-container').show();
-                    updateMapSize();
+                    updatePlotSize();
                 };
             },
             error: function(response) {

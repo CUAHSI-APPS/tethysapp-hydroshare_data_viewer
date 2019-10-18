@@ -51,6 +51,11 @@ class HydroshareDataViewer(TethysAppBase):
                 controller='hydroshare_data_viewer.ajax_controllers.update_attribute_table'
             ),
             UrlMap(
+                name='select-feature',
+                url='hydroshare-data-viewer/ajax/select-feature',
+                controller='hydroshare_data_viewer.ajax_controllers.select_feature'
+            ),
+            UrlMap(
                 name='get-timeseries-data',
                 url='hydroshare-data-viewer/ajax/get-timeseries-data',
                 controller='hydroshare_data_viewer.ajax_controllers.get_timeseries_data'
