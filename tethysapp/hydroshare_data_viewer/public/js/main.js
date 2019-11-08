@@ -617,7 +617,7 @@
         if (!($.isEmptyObject(selectedLayer))) {
             var sldBody = buildLayerStyle(layerList[activeLayer], true);
             selectedFeature['layerWMS'] = new ol.source.ImageWMS({
-                url: 'https://geoserver-beta.hydroshare.org/geoserver/wms',
+                url: $('#geoserver_url').text() + '/wms',
                 params: {'LAYERS': layerList[activeLayer]['layerCode'], 'SLD_BODY': sldBody},
                 serverType: 'geoserver',
                 crossOrigin: 'Anonymous'
@@ -1134,7 +1134,7 @@
 
         // Creates layer WMS object
         layerList[layerCode]['layerWMS'] = new ol.source.ImageWMS({
-            url: 'https://geoserver-beta.hydroshare.org/geoserver/wms',
+            url: $('#geoserver_url').text() + '/wms',
             params: {'LAYERS': layerList[layerCode]['layerCode'], 'SLD_BODY': sldBody},
             serverType: 'geoserver',
             crossOrigin: 'Anonymous'
@@ -2109,6 +2109,7 @@
             ],
             'drawCallback': function() {
                 $('.dataTables_scrollHeadInner').css({'width':'100%'});
+
                 attributeTable.rows().eq(0).each(function(index){
                     var row = attributeTable.row(index);
                     var data = row.data();
