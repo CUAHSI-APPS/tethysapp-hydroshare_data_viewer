@@ -9,7 +9,7 @@ class HydroshareDataViewer(TethysAppBase):
 
     name = 'HydroShare Data Viewer'
     index = 'hydroshare_data_viewer:home'
-    icon = 'hydroshare_data_viewer/images/cuahsi_logo.png'
+    icon = 'hydroshare_data_viewer/images/data-viewer.png'
     package = 'hydroshare_data_viewer'
     root_url = 'hydroshare-data-viewer'
     color = '#008080'
