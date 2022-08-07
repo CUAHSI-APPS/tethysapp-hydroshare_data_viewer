@@ -24,7 +24,7 @@ $ t
 
 Clone this repository into your Tethys apps folder:
 ```
-$ git clone https://github.com/kjlippold/tethysapp-hydroshare_data_viewer.git
+$ git clone https://github.com/CUAHSI-APPS/tethysapp-hydroshare_data_viewer.git
 ```
 
 Enter the app folder:
