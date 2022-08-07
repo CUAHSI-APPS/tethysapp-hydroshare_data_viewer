@@ -44,12 +44,12 @@ def update_discover_table(request):
     # ---------------------- #
 
     hydroshare_url = app.get_custom_setting("hydroshare_url")
-    search_param = f"&text={search_value}" if search_value else ""
+    search_param = f"&full_text_search={search_value}" if search_value else ""
 
     page, r = divmod(start, length)
 
-    request_url_upper = f"{hydroshare_url}/hsapi/resource/search?resource_type=Composite%20Resource&page={page+1}&count={length}{search_param}"
-    request_url_lower = f"{hydroshare_url}/hsapi/resource/search?resource_type=Composite%20Resource&page={page+2}&count={length}{search_param}"
+    request_url_upper = f"{hydroshare_url}/hsapi/resource?page={page+1}&count={length}{search_param}"
+    request_url_lower = f"{hydroshare_url}/hsapi/resource?page={page+2}&count={length}{search_param}"
     response_upper = requests.get(request_url_upper)
     response_lower = requests.get(request_url_lower)
     results_upper = json.loads(response_upper.content)
@@ -57,12 +57,12 @@ def update_discover_table(request):
 
     try:
         records = results_upper.get("count")
-        data_upper = [[i["resource_type"], i["text"].split("\n")[3].strip(), i["text"].split("\n")[1].strip()] for i in results_upper["results"]][r:]
+        data_upper = [[i["resource_type"], i["resource_title"], i["resource_id"]] for i in results_upper["results"]][r:]
     except:
         records = "0"
         data_upper = []
     try:
-        data_lower = [[i["resource_type"], i["text"].split("\n")[3].strip(), i["text"].split("\n")[1].strip()] for i in results_lower["results"]][:-int(length - r)]
+        data_lower = [[i["resource_type"], i["resource_title"], i["resource_id"]] for i in results_lower["results"]][:-int(length - r)]
     except:
         data_lower = []
 
