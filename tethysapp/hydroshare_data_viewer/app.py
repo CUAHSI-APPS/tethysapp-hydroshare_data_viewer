@@ -70,7 +70,7 @@ class HydroshareDataViewer(TethysAppBase):
                 name='hydroshare_url',
                 type=CustomSetting.TYPE_STRING,
                 description='HydroShare URL to connect to.',
-                required=True
+                required=False
             ),
             CustomSetting(
                 name='geoserver_url',
@@ -88,25 +88,25 @@ class HydroshareDataViewer(TethysAppBase):
                 name='include_feature',
                 type=CustomSetting.TYPE_BOOLEAN,
                 description='Include Geographic Feature content?',
-                required=True
+                required=False
             ),
             CustomSetting(
                 name='include_raster',
                 type=CustomSetting.TYPE_BOOLEAN,
                 description='Include Geographic Raster content?',
-                required=True
+                required=False
             ),
             CustomSetting(
                 name='include_timeseries',
                 type=CustomSetting.TYPE_BOOLEAN,
                 description='Include Time Series content?',
-                required=True
+                required=False
             ),
             CustomSetting(
                 name='max_layers',
                 type=CustomSetting.TYPE_INTEGER,
                 description='Maximum number of layers allowed in the workspace.',
-                required=True
+                required=False
             ),
         )
 
