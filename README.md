@@ -1,4 +1,4 @@
-# HydroShare GIS Data Viewer
+# HydroShare Data Viewer
 
 This app is designed to run on Tethys Platform and helps support CUAHSI's HydroShare project. Its purpose is to allow HydroShare users to quickly preview hydrologic geospatial and time series content stored in HydroShare resources.
 
@@ -24,12 +24,12 @@ $ t
 
 Clone this repository into your Tethys apps folder:
 ```
-$ git clone https://github.com/kjlippold/tethysapp-hydroshare_gis_data_viewer.git
+$ git clone https://github.com/CUAHSI-APPS/tethysapp-hydroshare_data_viewer.git
 ```
 
 Enter the app folder:
 ```
-$ cd /tethysapp-hydroshare_gis_data_viewer
+$ cd /tethysapp-hydroshare_data_viewer
 ```
 
 Install the app:
@@ -39,7 +39,7 @@ $ python setup.py develop
 
 Use the [Tethys Portal Admin Console](http://docs.tethysplatform.org/en/stable/installation/web_admin_setup.html) to define custom settings for the app. The HydroShare URL should point to the instance of HydroShare you wish to connect to (e.g. https://www.hydroshare.org). The GeoServer URL should point to a GeoServer associated with that instance of HydroShare (e.g. https://geoserver.hydroshare.org/geoserver). The HydroServer URL should point to a HydroServer associated with that instance of HydroShare (e.g. https://geoserver.hydroshare.org/wds). The Maximum Layer Count setting should be an integer that will limit the total number of layers a user can load into the app at once.
 
-The HydroShare Time Series Manager should now be running in you Tethys Portal.
+The HydroShare Data Viewer should now be running in you Tethys Portal.
 
 ## Built With
 
@@ -48,4 +48,4 @@ The HydroShare Time Series Manager should now be running in you Tethys Portal.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
