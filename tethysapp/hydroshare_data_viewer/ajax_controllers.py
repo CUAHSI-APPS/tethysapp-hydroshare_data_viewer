@@ -5,11 +5,12 @@ from django.http import JsonResponse
 from lxml import etree
 from .app import HydroshareDataViewer as app
 from .utilities import get_layers, get_field_stats
+from tethys_sdk.routing import controller
 
 geoserver_url = app.get_custom_setting("geoserver_url")
 hydroserver_url = app.get_custom_setting("hydroserver_url")
 
-
+@controller(name='update-discover-table', url='hydroshare-data-viewer/ajax/update-discover-table')                
 def update_discover_table(request):
     """
     Loads data for Datatables.
@@ -77,7 +78,7 @@ def update_discover_table(request):
 
     return JsonResponse(return_obj)
 
-
+@controller(name='get-resource-metadata', url='hydroshare-data-viewer/ajax/get-resource-metadata')    
 def get_resource_metadata(request):
     """
     Gets resource metadata and aggregations.
@@ -160,6 +161,7 @@ def get_resource_metadata(request):
     return JsonResponse(return_obj)
 
 
+@controller(name='get-field-statistics', url='hydroshare-data-viewer/ajax/get-field-statistics')
 def get_field_statistics(request):
     """
     Gets field statistics.
@@ -205,7 +207,7 @@ def get_field_statistics(request):
 
     return JsonResponse(return_obj)
 
-
+@controller(name='update-attribute-table', url='hydroshare-data-viewer/ajax/update-attribute-table')
 def update_attribute_table(request):
     """
     Loads data for Datatables.
@@ -277,7 +279,7 @@ def update_attribute_table(request):
 
     return JsonResponse(return_obj)
 
-
+@controller(name='select-feature', url='hydroshare-data-viewer/ajax/select-feature')
 def select_feature(request):
     """
     AJAX Controller for getting selected feature.
@@ -339,7 +341,7 @@ def select_feature(request):
     return_obj['row'] = row
     return JsonResponse(return_obj)
 
-
+@controller(name='get-timeseries-data', url='hydroshare-data-viewer/ajax/get-timeseries-data')
 def get_timeseries_data(request):
     """
     AJAX Controller for getting time series data.
