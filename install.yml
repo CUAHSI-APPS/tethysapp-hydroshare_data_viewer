@@ -8,9 +8,8 @@ requirements:
   skip: false
   conda:
     channels:
+      - conda-forge
     packages:
-
+      - lxml
   pip:
-    - lxml
-
 post:

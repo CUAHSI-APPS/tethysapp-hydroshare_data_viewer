@@ -1,7 +1,10 @@
 from django.shortcuts import render
 from .app import HydroshareDataViewer as app
 
+from tethys_sdk.routing import controller
 
+
+@controller(name='home', url='hydroshare-data-viewer')
 def home(request):
     """
     Controller for the app home page.

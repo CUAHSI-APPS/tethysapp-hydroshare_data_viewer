@@ -8,7 +8,7 @@ class HydroshareDataViewer(TethysAppBase):
     """
 
     name = 'HydroShare Data Viewer'
-    index = 'hydroshare_data_viewer:home'
+    index = 'home'
     icon = 'hydroshare_data_viewer/images/data-viewer.png'
     package = 'hydroshare_data_viewer'
     root_url = 'hydroshare-data-viewer'
@@ -17,52 +17,7 @@ class HydroshareDataViewer(TethysAppBase):
     tags = ''
     enable_feedback = False
     feedback_emails = []
-
-    def url_maps(self):
-        """
-        Add controllers
-        """
-        UrlMap = url_map_maker(self.root_url)
-
-        url_maps = (
-            UrlMap(
-                name='home',
-                url='hydroshare-data-viewer',
-                controller='hydroshare_data_viewer.controllers.home'
-            ),
-            UrlMap(
-                name='update-discover-table',
-                url='hydroshare-data-viewer/ajax/update-discover-table',
-                controller='hydroshare_data_viewer.ajax_controllers.update_discover_table'
-            ),
-            UrlMap(
-                name='get-resource-metadata',
-                url='hydroshare-data-viewer/ajax/get-resource-metadata',
-                controller='hydroshare_data_viewer.ajax_controllers.get_resource_metadata'
-            ),
-            UrlMap(
-                name='get-field-statistics',
-                url='hydroshare-data-viewer/ajax/get-field-statistics',
-                controller='hydroshare_data_viewer.ajax_controllers.get_field_statistics'
-            ),
-            UrlMap(
-                name='update-attribute-table',
-                url='hydroshare-data-viewer/ajax/update-attribute-table',
-                controller='hydroshare_data_viewer.ajax_controllers.update_attribute_table'
-            ),
-            UrlMap(
-                name='select-feature',
-                url='hydroshare-data-viewer/ajax/select-feature',
-                controller='hydroshare_data_viewer.ajax_controllers.select_feature'
-            ),
-            UrlMap(
-                name='get-timeseries-data',
-                url='hydroshare-data-viewer/ajax/get-timeseries-data',
-                controller='hydroshare_data_viewer.ajax_controllers.get_timeseries_data'
-            )
-        )
-
-        return url_maps
+    controller_modules = ['controllers', 'ajax_controllers', ]
 
     def custom_settings(self):
         custom_settings = (
